@@ -104,6 +104,9 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Middleware for Git Smart HTTP
+app.UseMiddleware<Aristokeides.Api.Middleware.GitSmartHttpMiddleware>();
+
 app.MapControllers();
 
 app.Run();
