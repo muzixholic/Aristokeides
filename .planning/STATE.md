@@ -8,5 +8,5 @@ See: .planning/PROJECT.md (updated 2026-05-29)
 **Current focus:** Phase 1: Foundations & Auth
 
 ## Last Session
-**Stopped at:** Phase 1 context gathered
-**Resume file:** .planning/phases/01-foundations-auth/01-CONTEXT.md
+**Stopped at:** Phase 1 planned
+**Resume file:** .planning/phases/01-foundations-auth/01-01-PLAN.md
