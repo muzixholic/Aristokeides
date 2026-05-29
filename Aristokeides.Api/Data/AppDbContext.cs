@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Repository> Repositories => Set<Repository>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,8 +20,21 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(u => u.Email).IsUnique();
+            entity.HasIndex(u => u.Username).IsUnique();
             entity.Property(u => u.Email).HasMaxLength(256);
+            entity.Property(u => u.Username).HasMaxLength(256);
             entity.Property(u => u.Role).HasMaxLength(50);
+            
+            entity.HasMany(u => u.Repositories)
+                  .WithOne(r => r.Owner)
+                  .HasForeignKey(r => r.OwnerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Repository>(entity =>
+        {
+            entity.Property(r => r.Name).HasMaxLength(256);
+            entity.Property(r => r.Status).HasMaxLength(50);
         });
     }
 }
