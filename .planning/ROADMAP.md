@@ -6,7 +6,7 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 1 | Foundations & Auth | 초기 프로젝트 셋업 및 기본 인증/권한 구현 | AUTH-01, AUTH-02 | 2 |
+| 1 | Foundations & Auth | 초기 프로젝트 셋업 및 기본 인증/권한 구현 | AUTH-01, AUTH-02 | ✅ Complete (2026-05-29) |
 | 2 | Core Git Operations | LibGit2Sharp를 이용한 Git Smart HTTP 및 저장소 생성 | REPO-01, REPO-02 | 2 |
 | 3 | Repository Browsing | 파일 트리, 브랜치, 커밋 내역을 볼 수 있는 웹 인터페이스 구현 | REPO-03 | 2 |
 | 4 | Issue Management | 이슈 생성/관리 및 기본 칸반 보드 뷰 구현 | ISSU-01, ISSU-02 | 2 |
