@@ -7,10 +7,10 @@
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 1 | Foundations & Auth | 초기 프로젝트 셋업 및 기본 인증/권한 구현 | AUTH-01, AUTH-02 | ✅ Complete (2026-05-29) |
-| 2 | Core Git Operations | LibGit2Sharp를 이용한 Git Smart HTTP 및 저장소 생성 | REPO-01, REPO-02 | 2 |
-| 3 | Repository Browsing | 파일 트리, 브랜치, 커밋 내역을 볼 수 있는 웹 인터페이스 구현 | REPO-03 | 2 |
-| 4 | Issue Management | 이슈 생성/관리 및 기본 칸반 보드 뷰 구현 | ISSU-01, ISSU-02 | 2 |
-| 5 | PRs & Code Review | 풀 리퀘스트 생성, Diff 리뷰 및 병합 기능 구현 | CODE-01, CODE-02, CODE-03 | 3 |
+| 2 | Core Git Operations | LibGit2Sharp를 이용한 Git Smart HTTP 및 저장소 생성 | REPO-01, REPO-02 | ✅ Complete (2026-05-29) |
+| 3 | Repository Browsing | 파일 트리, 브랜치, 커밋 내역을 볼 수 있는 웹 인터페이스 구현 | REPO-03 | Pending |
+| 4 | Issue Management | 이슈 생성/관리 및 기본 칸반 보드 뷰 구현 | ISSU-01, ISSU-02 | Pending |
+| 5 | PRs & Code Review | 풀 리퀘스트 생성, Diff 리뷰 및 병합 기능 구현 | CODE-01, CODE-02, CODE-03 | Pending |
 
 ### Phase Details
 
@@ -22,7 +22,7 @@
 1. 사용자가 이메일/비밀번호로 회원가입 및 로그인을 할 수 있다.
 2. Admin, Contributor, Reader 역할이 올바르게 할당되고 적용된다.
 
-**Phase 2: Core Git Operations**
+### Phase 2: Core Git Operations
 **Goal:** LibGit2Sharp를 이용한 Git Smart HTTP 및 저장소 생성
 **Mode:** mvp
 **Requirements:** REPO-01, REPO-02
@@ -30,7 +30,7 @@
 1. 사용자가 웹 UI를 통해 새로운 빈 저장소를 생성할 수 있다.
 2. 표준 Git 클라이언트를 사용하여 HTTP(S) 기반으로 clone, push, pull 작업을 수행할 수 있다.
 
-**Phase 3: Repository Browsing**
+### Phase 3: Repository Browsing
 **Goal:** 파일 트리, 브랜치, 커밋 내역을 볼 수 있는 웹 인터페이스 구현
 **Mode:** mvp
 **Requirements:** REPO-03
@@ -38,7 +38,7 @@
 1. 웹 UI에서 특정 브랜치의 디렉토리 및 파일 목록을 탐색할 수 있다.
 2. 커밋 히스토리를 성능 저하 없이 빠르게 렌더링하여 보여준다.
 
-**Phase 4: Issue Management**
+### Phase 4: Issue Management
 **Goal:** 이슈 생성/관리 및 기본 칸반 보드 뷰 구현
 **Mode:** mvp
 **Requirements:** ISSU-01, ISSU-02
@@ -46,7 +46,7 @@
 1. 사용자가 이슈를 생성, 수정, 닫을 수 있다.
 2. 이슈의 상태(Open, Closed 등)에 따라 기본 칸반 보드에서 카드를 시각적으로 확인할 수 있다.
 
-**Phase 5: PRs & Code Review**
+### Phase 5: PRs & Code Review
 **Goal:** 풀 리퀘스트 생성, Diff 리뷰 및 병합 기능 구현
 **Mode:** mvp
 **Requirements:** CODE-01, CODE-02, CODE-03
