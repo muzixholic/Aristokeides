@@ -31,4 +31,8 @@
 - Wiki and heavy documentation tools
 
 ## Traceability
-*(To be updated by roadmap)*
+- **Phase 1**: AUTH-01, AUTH-02
+- **Phase 2**: REPO-01, REPO-02
+- **Phase 3**: REPO-03
+- **Phase 4**: ISSU-01, ISSU-02
+- **Phase 5**: CODE-01, CODE-02, CODE-03
