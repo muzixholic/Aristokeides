@@ -1,6 +1,7 @@
 using System.Text;
 using Aristokeides.Api.Data;
 using Aristokeides.Api.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// --- Authentication (JWT) ---
+// --- Authentication (JWT and Basic) ---
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -31,7 +32,9 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
-});
+})
+.AddScheme<AuthenticationSchemeOptions, Aristokeides.Api.Auth.BasicAuthenticationHandler>("Basic", null);
+
 
 builder.Services.AddAuthorization();
 
