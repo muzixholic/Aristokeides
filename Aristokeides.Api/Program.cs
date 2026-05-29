@@ -58,6 +58,7 @@ builder.Services.AddAuthorization();
 // --- Background Services ---
 builder.Services.AddSingleton<RepositoryCreationChannel>();
 builder.Services.AddHostedService<RepositoryCreationBackgroundWorker>();
+builder.Services.AddScoped<GitBrowserService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
