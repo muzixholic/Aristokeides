@@ -1,0 +1,174 @@
+@page "/{username}/{repoName}"
+@page "/{username}/{repoName}/tree/{branch}"
+@page "/{username}/{repoName}/tree/{branch}/{*path}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject Aristokeides.Api.Services.GitBrowserService GitService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
+@inject NavigationManager NavManager
+
+<PageTitle>@RepoName - Aristokeides</PageTitle>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" style="background: var(--destructive); color: white; padding: 16px; border-radius: 4px;">
+        @errorMessage
+    </div>
+}
+else if (isEmptyRepo)
+{
+    <div style="text-align: center; margin-top: 48px;">
+        <h2>빈 저장소입니다</h2>
+        <p>아직 커밋된 파일이 없습니다. Git 클라이언트를 사용하여 코드를 푸시해 주세요.</p>
+        <pre style="background: var(--secondary); padding: 16px; border-radius: 4px; display: inline-block; text-align: left;">
+git remote add origin http://localhost:5000/@Username/@(RepoName).git
+git push -u origin main
+        </pre>
+    </div>
+}
+else
+{
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <select @onchange="OnBranchChanged" style="padding: 8px; border-radius: 4px;">
+                @foreach (var b in branches)
+                {
+                    <option value="@b" selected="@(b == Branch)">@b</option>
+                }
+            </select>
+            <span style="margin-left: 16px;">
+                <a href="/@Username/@RepoName/commits/@Branch" style="font-weight: 600;">커밋 내역 보기 (View Commits)</a>
+            </span>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 16px; font-weight: 600; background: var(--secondary); padding: 12px; border-radius: 4px;">
+        <a href="/@Username/@RepoName/tree/@Branch">@RepoName</a> / 
+        @if (!string.IsNullOrEmpty(Path))
+        {
+            var parts = Path.Split('/');
+            var currentPath = "";
+            for (int i = 0; i < parts.Length; i++)
+            {
+                currentPath += (i == 0 ? "" : "/") + parts[i];
+                <a href="/@Username/@RepoName/tree/@Branch/@currentPath">@parts[i]</a>
+                if (i < parts.Length - 1)
+                {
+                    <span> / </span>
+                }
+            }
+        }
+    </div>
+
+    <div style="border: 1px solid #e5e7eb; border-radius: 4px;">
+        @if (!string.IsNullOrEmpty(Path))
+        {
+            var parentPath = "";
+            var lastSlashIndex = Path.LastIndexOf('/');
+            if (lastSlashIndex >= 0)
+                parentPath = Path.Substring(0, lastSlashIndex);
+
+            <div style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
+                <a href="/@Username/@RepoName/tree/@Branch/@parentPath">.. (상위 디렉토리)</a>
+            </div>
+        }
+
+        @foreach (var entry in entries)
+        {
+            <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; display: flex;">
+                @if (entry.IsFolder)
+                {
+                    <span>📁 </span>
+                    <a href="/@Username/@RepoName/tree/@Branch/@entry.Path" style="margin-left: 8px;">@entry.Name</a>
+                }
+                else
+                {
+                    <span>📄 </span>
+                    <a href="/@Username/@RepoName/blob/@Branch/@entry.Path" style="margin-left: 8px;">@entry.Name</a>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Username { get; set; } = default!;
+    [Parameter] public string RepoName { get; set; } = default!;
+    [Parameter] public string? Branch { get; set; }
+    [Parameter] public string? Path { get; set; }
+
+    private string errorMessage = "";
+    private bool isEmptyRepo = false;
+    private List<string> branches = new();
+    private List<Aristokeides.Api.Services.GitTreeEntry> entries = new();
+    private string? repoPath;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            errorMessage = "인증되지 않았습니다.";
+            return;
+        }
+
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            errorMessage = "사용자 정보를 확인할 수 없습니다.";
+            return;
+        }
+
+        repoPath = await GitService.ValidateAccessAsync(userId, Username, RepoName);
+        if (repoPath == null || !System.IO.Directory.Exists(repoPath))
+        {
+            errorMessage = "저장소를 찾을 수 없거나 접근 권한이 없습니다.";
+            return;
+        }
+
+        try
+        {
+            branches = GitService.GetBranches(repoPath);
+            if (!branches.Any())
+            {
+                isEmptyRepo = true;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(Branch))
+            {
+                Branch = GitService.GetDefaultBranch(repoPath);
+                if (string.IsNullOrEmpty(Branch))
+                {
+                    isEmptyRepo = true;
+                    return;
+                }
+            }
+
+            if (!branches.Contains(Branch))
+            {
+                errorMessage = "항목을 찾을 수 없습니다. 브랜치나 경로가 올바른지 확인해 주세요.";
+                return;
+            }
+
+            entries = GitService.GetTreeEntries(repoPath, Branch, Path ?? "");
+        }
+        catch (LibGit2Sharp.NotFoundException)
+        {
+            errorMessage = "항목을 찾을 수 없습니다. 브랜치나 경로가 올바른지 확인해 주세요.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "오류가 발생했습니다: " + ex.Message;
+        }
+    }
+
+    private void OnBranchChanged(ChangeEventArgs e)
+    {
+        var newBranch = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(newBranch))
+        {
+            NavManager.NavigateTo($"/{Username}/{RepoName}/tree/{newBranch}");
+        }
+    }
+}
