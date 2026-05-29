@@ -1,0 +1,112 @@
+@page "/{username}/{repoName}/blob/{branch}/{*path}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject Aristokeides.Api.Services.GitBrowserService GitService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
+
+<PageTitle>@Path - @RepoName - Aristokeides</PageTitle>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" style="background: var(--destructive); color: white; padding: 16px; border-radius: 4px;">
+        @errorMessage
+    </div>
+}
+else
+{
+    <div style="margin-bottom: 16px; font-weight: 600; background: var(--secondary); padding: 12px; border-radius: 4px;">
+        <a href="/@Username/@RepoName/tree/@Branch">@RepoName</a> / 
+        @{
+            var parts = Path!.Split('/');
+            var currentPath = "";
+            for (int i = 0; i < parts.Length; i++)
+            {
+                currentPath += (i == 0 ? "" : "/") + parts[i];
+                if (i < parts.Length - 1)
+                {
+                    <a href="/@Username/@RepoName/tree/@Branch/@currentPath">@parts[i]</a>
+                    <span> / </span>
+                }
+                else
+                {
+                    <span>@parts[i]</span>
+                }
+            }
+        }
+    </div>
+
+    <div style="border: 1px solid #e5e7eb; border-radius: 4px;">
+        <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; background: var(--secondary);">
+            <strong>@parts.Last()</strong>
+        </div>
+        
+        @if (fileContent == null)
+        {
+            <div style="padding: 16px;">바이너리 파일이거나 내용을 표시할 수 없습니다.</div>
+        }
+        else
+        {
+            <div style="padding: 16px; overflow-x: auto;">
+                <pre style="margin: 0;"><code class="language-@fileExtension">@fileContent</code></pre>
+            </div>
+            <script>
+                if (typeof hljs !== 'undefined') {
+                    hljs.highlightElement(document.querySelector('pre code'));
+                }
+            </script>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Username { get; set; } = default!;
+    [Parameter] public string RepoName { get; set; } = default!;
+    [Parameter] public string Branch { get; set; } = default!;
+    [Parameter] public string Path { get; set; } = default!;
+
+    private string errorMessage = "";
+    private string? fileContent;
+    private string fileExtension = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            errorMessage = "인증되지 않았습니다.";
+            return;
+        }
+
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            errorMessage = "사용자 정보를 확인할 수 없습니다.";
+            return;
+        }
+
+        var repoPath = await GitService.ValidateAccessAsync(userId, Username, RepoName);
+        if (repoPath == null || !System.IO.Directory.Exists(repoPath))
+        {
+            errorMessage = "저장소를 찾을 수 없거나 접근 권한이 없습니다.";
+            return;
+        }
+
+        try
+        {
+            fileContent = GitService.GetBlobContent(repoPath, Branch, Path);
+            var ext = System.IO.Path.GetExtension(Path);
+            if (!string.IsNullOrEmpty(ext))
+            {
+                fileExtension = ext.Substring(1); // remove dot
+            }
+        }
+        catch (LibGit2Sharp.NotFoundException)
+        {
+            errorMessage = "항목을 찾을 수 없습니다. 브랜치나 경로가 올바른지 확인해 주세요.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "오류가 발생했습니다: " + ex.Message;
+        }
+    }
+}

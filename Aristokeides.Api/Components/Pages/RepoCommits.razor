@@ -1,0 +1,118 @@
+@page "/{username}/{repoName}/commits/{branch}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject Aristokeides.Api.Services.GitBrowserService GitService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
+@inject NavigationManager NavManager
+
+<PageTitle>Commits - @RepoName - Aristokeides</PageTitle>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" style="background: var(--destructive); color: white; padding: 16px; border-radius: 4px;">
+        @errorMessage
+    </div>
+}
+else
+{
+    <div style="margin-bottom: 24px; font-weight: 600; background: var(--secondary); padding: 12px; border-radius: 4px;">
+        <a href="/@Username/@RepoName/tree/@Branch">@RepoName</a> / Commits (@Branch)
+    </div>
+
+    <div style="border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background: var(--secondary); text-align: left;">
+                <tr>
+                    <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">메시지</th>
+                    <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">작성자</th>
+                    <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">날짜</th>
+                    <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">해시</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var commit in commits)
+                {
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px;">@commit.Message</td>
+                        <td style="padding: 12px;">@commit.Author</td>
+                        <td style="padding: 12px;">@commit.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="padding: 12px;">
+                            <span style="font-family: monospace; color: var(--accent);">@commit.Hash.Substring(0, 7)</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 16px; display: flex; justify-content: space-between;">
+        @if (CurrentPage > 1)
+        {
+            <a href="/@Username/@RepoName/commits/@Branch?page=@(CurrentPage - 1)" style="padding: 8px 16px; background: var(--secondary); border-radius: 4px;">이전 (Previous)</a>
+        }
+        else
+        {
+            <div></div>
+        }
+
+        @if (hasNextPage)
+        {
+            <a href="/@Username/@RepoName/commits/@Branch?page=@(CurrentPage + 1)" style="padding: 8px 16px; background: var(--secondary); border-radius: 4px;">다음 (Next)</a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Username { get; set; } = default!;
+    [Parameter] public string RepoName { get; set; } = default!;
+    [Parameter] public string Branch { get; set; } = default!;
+    
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? PageParam { get; set; }
+
+    private int CurrentPage => PageParam ?? 1;
+
+    private string errorMessage = "";
+    private List<Aristokeides.Api.Services.GitCommitInfo> commits = new();
+    private bool hasNextPage = false;
+    private const int PageSize = 20;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            errorMessage = "인증되지 않았습니다.";
+            return;
+        }
+
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            errorMessage = "사용자 정보를 확인할 수 없습니다.";
+            return;
+        }
+
+        var repoPath = await GitService.ValidateAccessAsync(userId, Username, RepoName);
+        if (repoPath == null || !System.IO.Directory.Exists(repoPath))
+        {
+            errorMessage = "저장소를 찾을 수 없거나 접근 권한이 없습니다.";
+            return;
+        }
+
+        try
+        {
+            var result = GitService.GetCommits(repoPath, Branch, CurrentPage, PageSize);
+            commits = result.Commits;
+            hasNextPage = result.HasNextPage;
+        }
+        catch (LibGit2Sharp.NotFoundException)
+        {
+            errorMessage = "항목을 찾을 수 없습니다. 브랜치나 경로가 올바른지 확인해 주세요.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "오류가 발생했습니다: " + ex.Message;
+        }
+    }
+}

@@ -102,7 +102,7 @@ else
     private List<Aristokeides.Api.Services.GitTreeEntry> entries = new();
     private string? repoPath;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         var authState = await AuthState.GetAuthenticationStateAsync();
         var user = authState.User;
