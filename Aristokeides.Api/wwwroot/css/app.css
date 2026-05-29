@@ -1,0 +1,40 @@
+:root {
+    --dominant: #FFFFFF;
+    --secondary: #F3F4F6;
+    --accent: #2563EB;
+    --destructive: #EF4444;
+}
+
+body {
+    background-color: var(--dominant);
+    color: #000;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.navbar {
+    background-color: var(--secondary);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.main-content {
+    padding: 24px;
+}

@@ -44,6 +44,8 @@ builder.Services.AddHostedService<RepositoryCreationBackgroundWorker>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
+builder.Services.AddRazorComponents();
+builder.Services.AddAntiforgery();
 
 // --- Swagger with JWT support ---
 builder.Services.AddEndpointsApiExplorer();
@@ -100,6 +102,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -108,5 +112,6 @@ app.UseAuthorization();
 app.UseMiddleware<Aristokeides.Api.Middleware.GitSmartHttpMiddleware>();
 
 app.MapControllers();
+app.MapRazorComponents<Aristokeides.Api.Components.App>();
 
 app.Run();

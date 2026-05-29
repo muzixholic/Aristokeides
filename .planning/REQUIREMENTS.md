@@ -7,8 +7,8 @@
 - [ ] **AUTH-02**: System supports basic roles (Admin, Contributor, Reader)
 
 ### Repository Management
-- [ ] **REPO-01**: User can create a new empty Git repository
-- [ ] **REPO-02**: User can clone, push, and pull via Git Smart HTTP
+- [x] **REPO-01**: User can create a new empty Git repository
+- [x] **REPO-02**: User can clone, push, and pull via Git Smart HTTP
 - [ ] **REPO-03**: User can view repository files, branches, and commit history in the web UI
 
 ### Issue Tracking
