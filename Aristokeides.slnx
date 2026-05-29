@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Aristokeides.Api/Aristokeides.Api.csproj" />
+  <Project Path="Aristokeides.Tests/Aristokeides.Tests.csproj" />
+</Solution>
