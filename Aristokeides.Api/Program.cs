@@ -1,5 +1,6 @@
 using System.Text;
 using Aristokeides.Api.Data;
+using Aristokeides.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +34,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// --- Background Services ---
+builder.Services.AddSingleton<RepositoryCreationChannel>();
+builder.Services.AddHostedService<RepositoryCreationBackgroundWorker>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
