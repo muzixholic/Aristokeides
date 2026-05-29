@@ -26,4 +26,8 @@ public class User
     /// 계정 생성 시간 (UTC).
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public required string Username { get; set; }
+
+    public ICollection<Repository> Repositories { get; set; } = new List<Repository>();
 }

@@ -31,9 +31,13 @@ public class AuthController : ControllerBase
         if (await _db.Users.AnyAsync(u => u.Email == request.Email))
             return Conflict(new { message = "이미 등록된 이메일입니다." });
 
+        if (await _db.Users.AnyAsync(u => u.Username == request.Username))
+            return Conflict(new { message = "이미 등록된 사용자명입니다." });
+
         var user = new User
         {
             Email = request.Email,
+            Username = request.Username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = "Reader" // 기본 역할
         };
@@ -83,5 +87,5 @@ public class AuthController : ControllerBase
     }
 }
 
-public record RegisterRequest(string Email, string Password);
+public record RegisterRequest(string Email, string Username, string Password);
 public record LoginRequest(string Email, string Password);
