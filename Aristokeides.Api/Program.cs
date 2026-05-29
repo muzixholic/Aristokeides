@@ -16,8 +16,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // --- Authentication (JWT and Basic) ---
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = "JWT_OR_COOKIE";
+    options.DefaultChallengeScheme = "JWT_OR_COOKIE";
 })
 .AddJwtBearer(options =>
 {
@@ -33,7 +33,24 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 })
+.AddCookie("Cookies", opts => 
+{
+    opts.LoginPath = "/login";
+})
+.AddPolicyScheme("JWT_OR_COOKIE", "JWT_OR_COOKIE", opts =>
+{
+    opts.ForwardDefaultSelector = context =>
+    {
+        string authorization = context.Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrEmpty(authorization) && authorization.StartsWith("Bearer "))
+            return JwtBearerDefaults.AuthenticationScheme;
+        
+        return "Cookies";
+    };
+})
 .AddScheme<AuthenticationSchemeOptions, Aristokeides.Api.Auth.BasicAuthenticationHandler>("Basic", null);
+
+builder.Services.AddCascadingAuthenticationState();
 
 
 builder.Services.AddAuthorization();

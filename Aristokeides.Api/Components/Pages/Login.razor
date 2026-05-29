@@ -1,0 +1,25 @@
+@page "/login"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+<PageTitle>Login</PageTitle>
+
+<div style="max-width: 400px; margin: 40px auto; padding: 24px; background: var(--dominant); border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">
+    <h2>Login</h2>
+    <form method="post" action="/api/auth/cookie-login">
+        <AntiforgeryToken />
+        
+        <div style="margin-bottom: 16px;">
+            <label for="email" style="display: block; font-weight: 600; margin-bottom: 4px;">Email</label>
+            <input type="email" id="email" name="email" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+        
+        <div style="margin-bottom: 24px;">
+            <label for="password" style="display: block; font-weight: 600; margin-bottom: 4px;">Password</label>
+            <input type="password" id="password" name="password" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+            Log in
+        </button>
+    </form>
+</div>
