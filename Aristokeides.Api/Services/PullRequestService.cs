@@ -25,7 +25,7 @@ public class PullRequestService
     {
         var repo = await _db.Repositories.Include(r => r.Owner).FirstOrDefaultAsync(r => r.Id == repositoryId);
         if (repo == null) return null;
-        var basePath = _config["GitSettings:BasePath"] ?? "C:/GitRepos";
+        var basePath = _config["GitSettings:BasePath"] ?? Path.GetFullPath("GitRepos");
         return Path.Combine(basePath, repo.Owner!.Username, $"{repo.Name}.git");
     }
 
