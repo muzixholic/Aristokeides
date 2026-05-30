@@ -12,8 +12,8 @@
 - [ ] **REPO-03**: User can view repository files, branches, and commit history in the web UI
 
 ### Issue Tracking
-- [ ] **ISSU-01**: User can create, edit, and close issues
-- [ ] **ISSU-02**: User can view issues on a basic Kanban board
+- [x] **ISSU-01**: User can create, edit, and close issues
+- [x] **ISSU-02**: User can view issues on a basic Kanban board
 
 ### Code Review
 - [ ] **CODE-01**: User can open a Pull Request from one branch to another
