@@ -60,6 +60,7 @@ builder.Services.AddSingleton<RepositoryCreationChannel>();
 builder.Services.AddHostedService<RepositoryCreationBackgroundWorker>();
 builder.Services.AddScoped<GitBrowserService>();
 builder.Services.AddScoped<IssueService>();
+builder.Services.AddScoped<PullRequestService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();

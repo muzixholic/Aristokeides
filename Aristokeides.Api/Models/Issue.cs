@@ -38,4 +38,6 @@ public class Issue
     public User? Creator { get; set; }
     public User? Assignee { get; set; }
     public BoardColumn? Column { get; set; }
+    public PullRequest? PullRequest { get; set; }
+    public ICollection<IssueComment> Comments { get; set; } = new List<IssueComment>();
 }

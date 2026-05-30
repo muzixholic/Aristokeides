@@ -1,0 +1,129 @@
+@page "/{Username}/{RepoName}/pulls"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.EntityFrameworkCore
+@inject PullRequestService PullRequestService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>@Username/@RepoName - Pull Requests</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #4b5563; text-decoration: none;">Issues</a>
+        <a href="/@Username/@RepoName/pulls" style="color: #2563eb; text-decoration: none; font-weight: 500;">Pull Requests</a>
+    </div>
+</div>
+
+<div class="pulls-container" style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Pull Requests</h2>
+        <button @onclick="NavigateToNewPullRequest" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+            Create Pull Request
+        </button>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading pull requests...</p>
+    }
+    else if (repository == null)
+    {
+        <p>Repository not found.</p>
+    }
+    else if (pullRequests.Count == 0)
+    {
+        <div style="text-align: center; padding: 48px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
+            <h3 style="margin-top: 0; font-size: 18px; color: #374151;">No Pull Requests Found</h3>
+            <p style="color: #6b7280; margin-bottom: 24px;">There are no pull requests yet. Create a new one to propose changes between branches.</p>
+            <button @onclick="NavigateToNewPullRequest" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                Create Pull Request
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="pr-list" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+            @foreach (var pr in pullRequests)
+            {
+                <div class="pr-item" style="padding: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: flex-start; background-color: #ffffff;">
+                    <div>
+                        <a href="/@Username/@RepoName/pulls/@pr.Issue?.LocalId" style="font-size: 16px; font-weight: 600; color: #111827; text-decoration: none; margin-bottom: 4px; display: block;">
+                            @pr.Issue?.Title
+                        </a>
+                        <div style="font-size: 12px; color: #6b7280;">
+                            <span style="font-weight: 600;">#@pr.Issue?.LocalId</span> opened by @pr.Issue?.Creator?.Username
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 12px; font-family: monospace; background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px;">
+                            @pr.TargetBranch &larr; @pr.SourceBranch
+                        </div>
+                        @if (pr.IsMerged)
+                        {
+                            <span style="background-color: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">Merged</span>
+                        }
+                        else
+                        {
+                            <span style="background-color: #dcfce3; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">Open</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = "";
+
+    [Parameter]
+    public string RepoName { get; set; } = "";
+
+    private Repository? repository;
+    private List<PullRequest> pullRequests = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+
+            if (repository != null)
+            {
+                pullRequests = await PullRequestService.GetPullRequestsAsync(repository.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load pull requests: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void NavigateToNewPullRequest()
+    {
+        Navigation.NavigateTo($"/{Username}/{RepoName}/pulls/new");
+    }
+}

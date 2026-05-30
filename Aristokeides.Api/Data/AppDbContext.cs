@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Repository> Repositories => Set<Repository>();
     public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
     public DbSet<Issue> Issues => Set<Issue>();
+    public DbSet<PullRequest> PullRequests => Set<PullRequest>();
+    public DbSet<IssueComment> IssueComments => Set<IssueComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +77,24 @@ public class AppDbContext : DbContext
 
             // Composite unique constraint: LocalId per Repository
             entity.HasIndex(i => new { i.RepositoryId, i.LocalId }).IsUnique();
+
+            entity.HasOne(i => i.PullRequest)
+                  .WithOne(pr => pr.Issue)
+                  .HasForeignKey<PullRequest>(pr => pr.IssueId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(i => i.Comments)
+                  .WithOne(c => c.Issue)
+                  .HasForeignKey(c => c.IssueId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<IssueComment>(entity =>
+        {
+            entity.HasOne(c => c.Author)
+                  .WithMany()
+                  .HasForeignKey(c => c.AuthorId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

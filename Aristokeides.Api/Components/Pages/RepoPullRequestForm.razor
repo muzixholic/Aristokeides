@@ -1,0 +1,208 @@
+@page "/{Username}/{RepoName}/pulls/new"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject PullRequestService PullRequestService
+@inject GitBrowserService GitBrowserService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>New Pull Request - @Username/@RepoName</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #4b5563; text-decoration: none;">Issues</a>
+        <a href="/@Username/@RepoName/pulls" style="color: #2563eb; text-decoration: none; font-weight: 500;">Pull Requests</a>
+    </div>
+</div>
+
+<div class="new-pr-container" style="max-width: 800px; margin: 0 auto; padding-bottom: 48px;">
+    <h2 style="margin-top: 0; font-size: 20px; font-weight: 600; margin-bottom: 24px;">Create Pull Request</h2>
+
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading...</p>
+    }
+    else if (repository == null)
+    {
+        <p>Repository not found.</p>
+    }
+    else
+    {
+        <div style="display: flex; gap: 16px; margin-bottom: 24px; align-items: center; background-color: #f3f4f6; padding: 16px; border-radius: 8px;">
+            <div style="flex-grow: 1;">
+                <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #374151;">Base (Target) Branch</label>
+                <select @bind="targetBranch" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                    @foreach (var branch in branches)
+                    {
+                        <option value="@branch">@branch</option>
+                    }
+                </select>
+            </div>
+            <div style="color: #6b7280; font-weight: bold; font-size: 18px; margin-top: 20px;">
+                &larr;
+            </div>
+            <div style="flex-grow: 1;">
+                <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #374151;">Compare (Source) Branch</label>
+                <select @bind="sourceBranch" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                    @foreach (var branch in branches)
+                    {
+                        <option value="@branch">@branch</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <form @onsubmit="HandleSubmit" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #111827;">Title</label>
+                <input type="text" @bind="title" required placeholder="Pull request title" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;" />
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #111827;">Description</label>
+                <textarea @bind="description" rows="5" placeholder="Describe your changes..." style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" @onclick="NavigateBack" style="background-color: transparent; color: #4b5563; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" disabled="@isSubmitting" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: @(isSubmitting ? "not-allowed" : "pointer"); opacity: @(isSubmitting ? 0.7 : 1);">
+                    @(isSubmitting ? "Creating..." : "Create Pull Request")
+                </button>
+            </div>
+        </form>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = "";
+
+    [Parameter]
+    public string RepoName { get; set; } = "";
+
+    private Repository? repository;
+    private List<string> branches = new();
+    
+    private string targetBranch = "";
+    private string sourceBranch = "";
+    private string title = "";
+    private string description = "";
+    
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+    private int currentUserId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+            else
+            {
+                errorMessage = "You must be logged in to create a pull request.";
+                return;
+            }
+
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+
+            if (repository != null)
+            {
+                var repoPath = await GitBrowserService.ValidateAccessAsync(currentUserId, Username, RepoName);
+                if (repoPath != null)
+                {
+                    branches = GitBrowserService.GetBranches(repoPath);
+                    var defaultBranch = GitBrowserService.GetDefaultBranch(repoPath);
+                    targetBranch = defaultBranch ?? branches.FirstOrDefault() ?? "";
+                    sourceBranch = targetBranch; // User can change this in the UI
+                }
+                else
+                {
+                    errorMessage = "Access denied or repository path invalid.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load branches: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            errorMessage = "Title is required.";
+            return;
+        }
+
+        if (sourceBranch == targetBranch)
+        {
+            errorMessage = "Source and Target branches must be different.";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var pr = await PullRequestService.CreatePullRequestAsync(
+                repository!.Id, 
+                title, 
+                description, 
+                sourceBranch, 
+                targetBranch, 
+                currentUserId
+            );
+
+            // Need to refetch to get LocalId
+            var createdIssue = await DbContext.Issues.FirstOrDefaultAsync(i => i.Id == pr.IssueId);
+            Navigation.NavigateTo($"/{Username}/{RepoName}/pulls/{createdIssue?.LocalId}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            isSubmitting = false;
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/{Username}/{RepoName}/pulls");
+    }
+}
