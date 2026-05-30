@@ -1,0 +1,203 @@
+@page "/{Username}/{RepoName}/issues/{LocalId:int}"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.EntityFrameworkCore
+@inject IssueService IssueService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>Issue #@LocalId - @Username/@RepoName</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #2563eb; text-decoration: none; font-weight: 500;">Issues</a>
+    </div>
+</div>
+
+<div class="issue-detail-container" style="max-width: 800px; margin: 0 auto; background-color: #ffffff; padding: 24px; border: 1px solid #e5e7eb; border-radius: 6px;">
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading...</p>
+    }
+    else if (issue == null)
+    {
+        <p>Issue not found.</p>
+    }
+    else
+    {
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+            <div>
+                <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 600;">@issue.Title <span style="color: #6b7280; font-weight: 400;">#@issue.LocalId</span></h2>
+                <div style="font-size: 14px; color: #4b5563;">
+                    <span style="font-weight: 500;">@issue.Creator?.Username</span> opened this issue on @issue.CreatedAt.ToString("MMM dd, yyyy") · @(issue.Column?.Name)
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button @onclick="ToggleEdit" style="background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                    @(isEditing ? "Cancel Edit" : "Edit")
+                </button>
+                @if (issue.Column?.Name?.ToLower() != "done")
+                {
+                    <button @onclick="CloseIssue" style="background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                        Close Issue
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #e5e7eb; padding-top: 24px;">
+            @if (isEditing)
+            {
+                <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="EditIssueForm">
+                    <DataAnnotationsValidator />
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label for="title" style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px;">Title</label>
+                        <InputText id="title" @bind-Value="model.Title" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;" />
+                        <ValidationMessage For="@(() => model.Title)" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label for="description" style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px;">Description</label>
+                        <InputTextArea id="description" @bind-Value="model.Description" class="form-control" rows="8" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; font-family: inherit;" />
+                    </div>
+
+                    <button type="submit" disabled="@isSubmitting" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                        @(isSubmitting ? "Saving..." : "Save Changes")
+                    </button>
+                </EditForm>
+            }
+            else
+            {
+                <div style="font-size: 14px; line-height: 1.5; color: #374151; white-space: pre-wrap;">
+                    @(string.IsNullOrWhiteSpace(issue.Description) ? "No description provided." : issue.Description)
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = "";
+
+    [Parameter]
+    public string RepoName { get; set; } = "";
+
+    [Parameter]
+    public int LocalId { get; set; }
+
+    private Repository? repository;
+    private Issue? issue;
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+
+    private IssueFormModel model = new();
+
+    public class IssueFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Title is required")]
+        public string Title { get; set; } = "";
+        
+        public string? Description { get; set; }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadIssue();
+    }
+
+    private async Task LoadIssue()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+                
+            if (repository != null)
+            {
+                issue = await IssueService.GetIssueAsync(repository.Id, LocalId);
+                if (issue != null)
+                {
+                    model.Title = issue.Title;
+                    model.Description = issue.Description;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load issue: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ToggleEdit()
+    {
+        isEditing = !isEditing;
+        if (isEditing && issue != null)
+        {
+            model.Title = issue.Title;
+            model.Description = issue.Description;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (issue == null) return;
+        
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            await IssueService.UpdateIssueDetailsAsync(issue.Id, model.Title, model.Description, issue.AssigneeId);
+            await LoadIssue(); // Reload to get updated data
+            isEditing = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to update issue: " + ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task CloseIssue()
+    {
+        if (issue == null) return;
+        
+        // Simple confirmation prompt not available server side without JS interop, 
+        // we'll just execute it here for simplicity
+        try
+        {
+            await IssueService.CloseIssueAsync(issue.Id);
+            await LoadIssue(); // Reload to reflect 'Done' column change
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to close issue: " + ex.Message;
+        }
+    }
+}

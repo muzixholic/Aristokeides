@@ -1,0 +1,135 @@
+@page "/{Username}/{RepoName}/issues/new"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.EntityFrameworkCore
+@inject IssueService IssueService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>New Issue - @Username/@RepoName</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #2563eb; text-decoration: none; font-weight: 500;">Issues</a>
+    </div>
+</div>
+
+<div class="issue-form-container" style="max-width: 800px; margin: 0 auto; background-color: #ffffff; padding: 24px; border: 1px solid #e5e7eb; border-radius: 6px;">
+    <h2 style="margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 600;">Create New Issue</h2>
+
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading...</p>
+    }
+    else if (repository == null)
+    {
+        <p>Repository not found.</p>
+    }
+    else
+    {
+        <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="NewIssueForm">
+            <DataAnnotationsValidator />
+            
+            <div style="margin-bottom: 16px;">
+                <label for="title" style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px;">Title</label>
+                <InputText id="title" @bind-Value="model.Title" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;" />
+                <ValidationMessage For="@(() => model.Title)" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label for="description" style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px;">Description</label>
+                <InputTextArea id="description" @bind-Value="model.Description" class="form-control" rows="8" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; font-family: inherit;" />
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" disabled="@isSubmitting" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                    @(isSubmitting ? "Creating..." : "Create Issue")
+                </button>
+                <a href="/@Username/@RepoName/issues" style="padding: 8px 16px; color: #4b5563; text-decoration: none; border: 1px solid #d1d5db; border-radius: 4px; font-weight: 500; display: inline-block;">
+                    Cancel
+                </a>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = "";
+
+    [Parameter]
+    public string RepoName { get; set; } = "";
+
+    private Repository? repository;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+    private User? currentUser;
+
+    private IssueFormModel model = new();
+
+    public class IssueFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Title is required")]
+        public string Title { get; set; } = "";
+        
+        public string? Description { get; set; }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+                
+            // Simulate current user for now (or retrieve from auth state if auth is implemented)
+            // Assuming first user for testing if no auth context
+            currentUser = await DbContext.Users.FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load repository: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (repository == null || currentUser == null) return;
+        
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var issue = await IssueService.CreateIssueAsync(repository.Id, model.Title, model.Description, currentUser.Id);
+            Navigation.NavigateTo($"/{Username}/{RepoName}/issues");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to create issue: " + ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

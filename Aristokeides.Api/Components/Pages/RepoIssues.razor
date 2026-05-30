@@ -1,149 +1,153 @@
-@page "/{username}/{repoName}/issues"
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@page "/{Username}/{RepoName}/issues"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.EntityFrameworkCore
+@inject IssueService IssueService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
-@inject Aristokeides.Api.Services.IssueService IssueService
-@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
-@inject NavigationManager NavManager
 
-<PageTitle>Issues - @RepoName - Aristokeides</PageTitle>
+<PageTitle>@Username/@RepoName - Issues</PageTitle>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div style="background: var(--destructive); color: white; padding: 16px; border-radius: 4px;">
-        @errorMessage
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #2563eb; text-decoration: none; font-weight: 500;">Issues</a>
     </div>
-}
-else if (repository == null)
-{
-    <p>Loading...</p>
-}
-else
-{
+</div>
+
+<div class="issues-container" style="max-width: 1200px; margin: 0 auto;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <div>
-            <a href="/@Username/@RepoName">Code</a>
-            <span style="margin: 0 8px; color: #9CA3AF;">|</span>
-            <span style="font-weight: 600;">Issues</span>
-        </div>
-        <a href="/@Username/@RepoName/issues/new"
-           style="background: var(--accent); color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Kanban Board</h2>
+        <button @onclick="NavigateToNewIssue" style="background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer;">
             Create Issue
-        </a>
+        </button>
     </div>
 
-    @if (!issues.Any())
+    @if (errorMessage != null)
     {
-        <div style="text-align: center; margin-top: 48px;">
-            <h2 style="font-size: 24px;">No issues found</h2>
-            <p style="color: #6B7280;">Get started by creating a new issue for this repository.</p>
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
         </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading board...</p>
+    }
+    else if (repository == null)
+    {
+        <p>Repository not found.</p>
     }
     else
     {
-        <div style="display: flex; overflow-x: auto; gap: 16px; padding: 24px 0;">
+        <div class="kanban-board" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 16px;">
             @foreach (var column in columns)
             {
-                var columnIssues = issues.Where(i => i.ColumnId == column.Id).ToList();
-                <div style="flex-shrink: 0; width: 300px; background: var(--secondary); border-radius: 4px; padding: 16px;"
-                     @ondrop="() => HandleDrop(column.Id)"
-                     @ondragover:preventDefault>
-
-                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>@column.Name</span>
-                        <span style="background: #E5E7EB; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 500;">@columnIssues.Count</span>
-                    </div>
-
-                    @foreach (var issue in columnIssues)
-                    {
-                        <div draggable="true"
-                             @ondragstart="() => HandleDragStart(issue.Id)"
-                             @onclick="() => NavigateToIssue(issue.LocalId)"
-                             style="background: var(--dominant); border: 1px solid #E5E7EB; border-radius: 4px; padding: 12px; margin-bottom: 8px; cursor: grab; @(draggedIssueId == issue.Id ? "opacity: 0.5;" : "")">
-                            <div style="font-weight: 500;">@issue.Title</div>
-                            <div style="font-size: 12px; color: #6B7280; margin-top: 4px;">
-                                #@issue.LocalId
-                                @if (issue.Assignee != null)
-                                {
-                                    <span> · @issue.Assignee.Username</span>
-                                }
+                <div class="kanban-column" style="background-color: #f3f4f6; border-radius: 6px; width: 300px; flex-shrink: 0; padding: 12px; display: flex; flex-direction: column;"
+                     ondragover="event.preventDefault()" 
+                     @ondrop="@(async () => await HandleDrop(column.Id))">
+                    
+                    <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #374151;">@column.Name</h3>
+                    
+                    <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1;">
+                        @foreach (var issue in issues.Where(i => i.ColumnId == column.Id).OrderBy(i => i.LocalId))
+                        {
+                            <div class="kanban-card" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; cursor: grab; opacity: @(draggingIssue?.Id == issue.Id ? 0.5 : 1);"
+                                 draggable="true" 
+                                 @ondragstart="@(() => HandleDragStart(issue))"
+                                 @onclick="@(() => NavigateToIssue(issue.LocalId))">
+                                
+                                <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">@issue.Title</div>
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6b7280;">
+                                    <span>#@issue.LocalId</span>
+                                    @if (issue.Assignee != null)
+                                    {
+                                        <span>@issue.Assignee.Username</span>
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
             }
         </div>
     }
-}
-
-@if (!string.IsNullOrEmpty(statusMessage))
-{
-    <div style="position: fixed; bottom: 16px; right: 16px; background: var(--destructive); color: white; padding: 12px 16px; border-radius: 4px;">
-        @statusMessage
-    </div>
-}
+</div>
 
 @code {
-    [Parameter] public string Username { get; set; } = default!;
-    [Parameter] public string RepoName { get; set; } = default!;
+    [Parameter]
+    public string Username { get; set; } = "";
 
-    private string errorMessage = "";
-    private string statusMessage = "";
-    private Aristokeides.Api.Models.Repository? repository;
-    private List<Aristokeides.Api.Models.BoardColumn> columns = new();
-    private List<Aristokeides.Api.Models.Issue> issues = new();
-    private Guid? draggedIssueId;
+    [Parameter]
+    public string RepoName { get; set; } = "";
 
-    protected override async Task OnInitializedAsync()
+    private Repository? repository;
+    private List<BoardColumn> columns = new();
+    private List<Issue> issues = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private Issue? draggingIssue;
+
+    protected override async Task OnParametersSetAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (!user.Identity?.IsAuthenticated ?? true)
+        isLoading = true;
+        errorMessage = null;
+        try
         {
-            errorMessage = "인증되지 않았습니다.";
-            return;
-        }
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
 
-        repository = await IssueService.GetRepositoryAsync(Username, RepoName);
-        if (repository == null)
+            if (repository != null)
+            {
+                columns = await IssueService.GetBoardColumnsAsync(repository.Id);
+                issues = await IssueService.GetIssuesAsync(repository.Id);
+            }
+        }
+        catch (Exception ex)
         {
-            errorMessage = "저장소를 찾을 수 없거나 접근 권한이 없습니다.";
-            return;
+            errorMessage = "Failed to load board: " + ex.Message;
         }
-
-        await LoadBoardAsync();
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private async Task LoadBoardAsync()
+    private void HandleDragStart(Issue issue)
     {
-        columns = await IssueService.GetBoardColumnsAsync(repository!.Id);
-        issues = await IssueService.GetIssuesAsync(repository.Id);
+        draggingIssue = issue;
     }
 
-    private void HandleDragStart(Guid issueId)
+    private async Task HandleDrop(Guid targetColumnId)
     {
-        draggedIssueId = issueId;
+        if (draggingIssue != null && draggingIssue.ColumnId != targetColumnId)
+        {
+            try
+            {
+                await IssueService.UpdateIssueStatusAsync(draggingIssue.Id, targetColumnId);
+                // Update local state without full reload
+                draggingIssue.ColumnId = targetColumnId;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = "Failed to update issue status: " + ex.Message;
+            }
+        }
+        draggingIssue = null;
     }
 
-    private async Task HandleDrop(Guid columnId)
+    private void NavigateToNewIssue()
     {
-        if (draggedIssueId == null) return;
-
-        var success = await IssueService.UpdateIssueStatusAsync(draggedIssueId.Value, columnId);
-        if (success)
-        {
-            await LoadBoardAsync();
-            statusMessage = "";
-        }
-        else
-        {
-            statusMessage = "Failed to update issue status. Please try again.";
-        }
-
-        draggedIssueId = null;
+        Navigation.NavigateTo($"/{Username}/{RepoName}/issues/new");
     }
 
     private void NavigateToIssue(int localId)
     {
-        NavManager.NavigateTo($"/{Username}/{RepoName}/issues/{localId}");
+        Navigation.NavigateTo($"/{Username}/{RepoName}/issues/{localId}");
     }
 }
