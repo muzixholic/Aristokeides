@@ -30,4 +30,6 @@ public class User
     public required string Username { get; set; }
 
     public ICollection<Repository> Repositories { get; set; } = new List<Repository>();
+    public ICollection<Issue> CreatedIssues { get; set; } = new List<Issue>();
+    public ICollection<Issue> AssignedIssues { get; set; } = new List<Issue>();
 }

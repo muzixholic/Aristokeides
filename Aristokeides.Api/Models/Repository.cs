@@ -10,4 +10,6 @@ public class Repository
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User? Owner { get; set; }
+    public ICollection<BoardColumn> BoardColumns { get; set; } = new List<BoardColumn>();
+    public ICollection<Issue> Issues { get; set; } = new List<Issue>();
 }
