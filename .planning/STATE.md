@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-last_updated: "2026-05-29T06:58:18.034Z"
+status: executing
+last_updated: "2026-05-30T11:12:00Z"
 progress:
-  total_phases: 4
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 50
+  total_phases: 5
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -19,14 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-29)
 
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
-**Status:** Phase 3 complete
-**Current focus:** Phase 4: Issue Management
-**Current Position:** Pending plan phase
+**Status:** Executing Phase 04
+**Current focus:** Phase 04 — issue-management (Plan 01 complete)
+**Current Position:** Plan 01 of Phase 04 complete. Ready for Plan 02.
 
 ## Last Session
 
-**Stopped at:** Phase 4 context gathered
-**Resume file:** .planning/phases/04-issue-management/04-CONTEXT.md
+**Stopped at:** Completed 04-01-PLAN.md
+**Resume file:** .planning/phases/04-issue-management/02-PLAN.md
 
 ## Decisions
 
@@ -37,6 +37,9 @@ See: .planning/PROJECT.md (updated 2026-05-29)
 - **D-05 (Phase 3):** Use Blazor Server (SSR Mode) instead of SPA for straightforward Git data visualization.
 - **D-06 (Phase 3):** Use highlight.js globally through CDN and inline scripts for lightweight code block styling.
 - **D-07 (Phase 3):** Combined Auth policy scheme (JWT + Cookies) to unify backend API and UI views.
+- **D-08 (Phase 4):** CreatorId uses DeleteBehavior.Restrict to prevent accidental user deletion with existing issues.
+- **D-09 (Phase 4):** AssigneeId uses DeleteBehavior.SetNull so unassigning is safe when users are removed.
+- **D-10 (Phase 4):** Composite unique index on (RepositoryId, LocalId) enforces per-repo issue numbering.
 
 ## Blockers
 
