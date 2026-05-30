@@ -46,6 +46,16 @@ public class RepositoriesController : ControllerBase
         };
 
         _db.Repositories.Add(repository);
+
+        // Seed default board columns for the new repository
+        var defaultColumns = new[]
+        {
+            new BoardColumn { Id = Guid.NewGuid(), RepositoryId = repository.Id, Name = "To Do", Order = 1 },
+            new BoardColumn { Id = Guid.NewGuid(), RepositoryId = repository.Id, Name = "In Progress", Order = 2 },
+            new BoardColumn { Id = Guid.NewGuid(), RepositoryId = repository.Id, Name = "Done", Order = 3 }
+        };
+        _db.BoardColumns.AddRange(defaultColumns);
+
         await _db.SaveChangesAsync();
 
         await _channel.EnqueueAsync(repository.Id);

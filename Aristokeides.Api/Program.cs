@@ -62,7 +62,8 @@ builder.Services.AddScoped<GitBrowserService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
-builder.Services.AddRazorComponents();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 builder.Services.AddAntiforgery();
 
 // --- Swagger with JWT support ---
@@ -130,6 +131,7 @@ app.UseAuthorization();
 app.UseMiddleware<Aristokeides.Api.Middleware.GitSmartHttpMiddleware>();
 
 app.MapControllers();
-app.MapRazorComponents<Aristokeides.Api.Components.App>();
+app.MapRazorComponents<Aristokeides.Api.Components.App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
