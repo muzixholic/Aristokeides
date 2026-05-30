@@ -10,7 +10,7 @@
 | 2 | Core Git Operations | LibGit2Sharp를 이용한 Git Smart HTTP 및 저장소 생성 | REPO-01, REPO-02 | ✅ Complete (2026-05-29) |
 | 3 | Repository Browsing | 파일 트리, 브랜치, 커밋 내역을 볼 수 있는 웹 인터페이스 구현 | REPO-03 | ✅ Complete (2026-05-29) |
 | 4 | Issue Management | 2/2 | Complete   | 2026-05-30 |
-| 5 | PRs & Code Review | 풀 리퀘스트 생성, Diff 리뷰 및 병합 기능 구현 | CODE-01, CODE-02, CODE-03 | Pending |
+| 5 | PRs & Code Review | 2/2 | Complete   | 2026-05-30 |
 
 ### Phase Details
 
@@ -47,7 +47,7 @@
 2. 이슈의 상태(Open, Closed 등)에 따라 기본 칸반 보드에서 카드를 시각적으로 확인할 수 있다.
 
 ### Phase 5: PRs & Code Review
-**Goal:** 풀 리퀘스트 생성, Diff 리뷰 및 병합 기능 구현
+**Goal:** As a developer, I want to create, review, and merge pull requests, so that I can collaborate on code changes safely.
 **Mode:** mvp
 **Requirements:** CODE-01, CODE-02, CODE-03
 **Success criteria:**

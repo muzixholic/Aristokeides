@@ -41,7 +41,8 @@ public class RepositoryCreationBackgroundWorker : BackgroundService
 
                 var username = repo.Owner.Username;
                 var repoName = repo.Name;
-                var gitPath = $"C:/GitRepos/{username}/{repoName}.git";
+                var basePath = Path.GetFullPath("GitRepos");
+                var gitPath = Path.Combine(basePath, username, $"{repoName}.git");
 
                 Directory.CreateDirectory(Path.GetDirectoryName(gitPath)!);
                 LibGit2Sharp.Repository.Init(gitPath, isBare: true);

@@ -73,7 +73,8 @@ public class GitSmartHttpMiddleware
             return;
         }
 
-        var gitProjectRoot = $"C:/GitRepos/{username}";
+        var basePath = Path.GetFullPath("GitRepos");
+        var gitProjectRoot = Path.Combine(basePath, username);
 
         var processStartInfo = new ProcessStartInfo
         {
@@ -90,6 +91,7 @@ public class GitSmartHttpMiddleware
         processStartInfo.EnvironmentVariables["GIT_PROJECT_ROOT"] = gitProjectRoot;
         processStartInfo.EnvironmentVariables["PATH_INFO"] = gitPathInfo;
         processStartInfo.EnvironmentVariables["GIT_HTTP_EXPORT_ALL"] = "1";
+        processStartInfo.EnvironmentVariables["REMOTE_USER"] = username;
         processStartInfo.EnvironmentVariables["REQUEST_METHOD"] = context.Request.Method;
         processStartInfo.EnvironmentVariables["CONTENT_TYPE"] = context.Request.ContentType ?? "";
         

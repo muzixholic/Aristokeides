@@ -28,7 +28,7 @@ public class GitBrowserService
         if (repo == null || repo.OwnerId != userId)
             return null;
 
-        var basePath = _config["GitSettings:BasePath"] ?? "C:/GitRepos";
+        var basePath = _config["GitSettings:BasePath"] ?? Path.GetFullPath("GitRepos");
         return Path.Combine(basePath, username, $"{repoName}.git");
     }
 

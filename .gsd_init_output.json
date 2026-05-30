@@ -1,0 +1,45 @@
+{
+  "executor_model": "sonnet",
+  "verifier_model": "sonnet",
+  "tdd_mode": false,
+  "commit_docs": true,
+  "sub_repos": [],
+  "parallelization": true,
+  "context_window": 200000,
+  "branching_strategy": "none",
+  "phase_branch_template": "gsd/phase-{phase}-{slug}",
+  "milestone_branch_template": "gsd/{milestone}-{slug}",
+  "verifier_enabled": true,
+  "phase_found": true,
+  "phase_dir": ".planning/phases/04-issue-management",
+  "phase_number": "04",
+  "phase_name": "issue-management",
+  "phase_slug": "issue-management",
+  "phase_req_ids": "ISSU-01, ISSU-02",
+  "plans": [
+    "01-PLAN.md",
+    "02-PLAN.md"
+  ],
+  "summaries": [
+    "01-SUMMARY.md"
+  ],
+  "incomplete_plans": [
+    "02-PLAN.md"
+  ],
+  "plan_count": 2,
+  "incomplete_count": 1,
+  "branch_name": null,
+  "milestone_version": "v1.0",
+  "milestone_name": "milestone",
+  "milestone_slug": "milestone",
+  "state_exists": true,
+  "roadmap_exists": true,
+  "config_exists": true,
+  "state_path": ".planning/STATE.md",
+  "roadmap_path": ".planning/ROADMAP.md",
+  "config_path": ".planning/config.json",
+  "project_root": "/Users/muzixholic/Projects/Aristokeides",
+  "agents_installed": true,
+  "missing_agents": [],
+  "project_title": "Aristokeides (Git 기반 프로젝트 관리 시스템)"
+}

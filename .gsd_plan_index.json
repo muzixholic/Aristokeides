@@ -1,0 +1,56 @@
+{
+  "phase": "04",
+  "plans": [
+    {
+      "id": "01",
+      "wave": 1,
+      "depends_on": [],
+      "autonomous": true,
+      "objective": null,
+      "files_modified": [
+        "Aristokeides.Api/Models/BoardColumn.cs",
+        "Aristokeides.Api/Models/Issue.cs",
+        "Aristokeides.Api/Models/User.cs",
+        "Aristokeides.Api/Models/Repository.cs",
+        "Aristokeides.Api/Data/AppDbContext.cs",
+        "Aristokeides.Api/Controllers/RepositoriesController.cs",
+        "Aristokeides.Api/Program.cs",
+        "Aristokeides.Api/Components/App.razor"
+      ],
+      "task_count": 2,
+      "has_summary": true
+    },
+    {
+      "id": "02",
+      "wave": 1,
+      "depends_on": [
+        "01-PLAN.md"
+      ],
+      "autonomous": true,
+      "objective": null,
+      "files_modified": [
+        "Aristokeides.Api/Services/IssueService.cs",
+        "Aristokeides.Api/Program.cs",
+        "Aristokeides.Api/Components/Pages/RepoIssues.razor",
+        "Aristokeides.Api/Components/Pages/RepoIssueDetail.razor",
+        "Aristokeides.Api/Components/Pages/RepoIssueForm.razor"
+      ],
+      "task_count": 3,
+      "has_summary": false
+    }
+  ],
+  "waves": {
+    "1": [
+      "01",
+      "02"
+    ]
+  },
+  "incomplete": [
+    "02"
+  ],
+  "has_checkpoints": false,
+  "warnings": [
+    "Plan 02: unresolved depends_on reference '01-PLAN.md' — no matching plan in phase",
+    "Plan 02: declared wave: 2 but depends_on DAG places it in wave 1"
+  ]
+}

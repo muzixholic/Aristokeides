@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseStaticWebAssets();
 
 // --- Database ---
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -123,7 +124,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.UseAuthentication();
@@ -132,6 +132,7 @@ app.UseAuthorization();
 // Middleware for Git Smart HTTP
 app.UseMiddleware<Aristokeides.Api.Middleware.GitSmartHttpMiddleware>();
 
+app.MapStaticAssets();
 app.MapControllers();
 app.MapRazorComponents<Aristokeides.Api.Components.App>()
     .AddInteractiveServerRenderMode();
