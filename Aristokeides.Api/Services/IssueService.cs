@@ -123,4 +123,21 @@ public class IssueService
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<IssueComment> AddCommentAsync(Guid issueId, int authorId, string content)
+    {
+        var comment = new IssueComment
+        {
+            Id = Guid.NewGuid(),
+            IssueId = issueId,
+            AuthorId = authorId,
+            Content = content,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.IssueComments.Add(comment);
+        await _context.SaveChangesAsync();
+
+        return comment;
+    }
 }

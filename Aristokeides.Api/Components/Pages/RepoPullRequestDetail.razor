@@ -1,0 +1,310 @@
+@page "/{Username}/{RepoName}/pulls/{LocalId:int}"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject PullRequestService PullRequestService
+@inject IssueService IssueService
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>@Username/@RepoName - Pull Request #@LocalId</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+    <div style="margin-top: 16px; display: flex; gap: 16px;">
+        <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+        <a href="/@Username/@RepoName/issues" style="color: #4b5563; text-decoration: none;">Issues</a>
+        <a href="/@Username/@RepoName/pulls" style="color: #2563eb; text-decoration: none; font-weight: 500;">Pull Requests</a>
+    </div>
+</div>
+
+<div class="pr-detail-container" style="max-width: 1000px; margin: 0 auto; padding-bottom: 48px;">
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <p>Loading pull request...</p>
+    }
+    else if (pullRequest == null)
+    {
+        <p>Pull Request not found.</p>
+    }
+    else
+    {
+        <div style="margin-bottom: 24px;">
+            <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 12px;">
+                @pullRequest.Issue?.Title
+                <span style="font-weight: 400; color: #6b7280;">#@pullRequest.Issue?.LocalId</span>
+            </h2>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
+                @if (pullRequest.IsMerged)
+                {
+                    <span style="background-color: #8b5cf6; color: white; padding: 6px 12px; border-radius: 16px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5 3.254V3.25v.005a.75.75 0 110-1.505.75.75 0 010 1.505zM5 4.5a2.25 2.25 0 10-.75 4.372v4.256a2.25 2.25 0 101.5 0V8.872A2.25 2.25 0 005 4.5zm4.25 1.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.75 6.25a2.25 2.25 0 014.155-.86l.666-1.01a.75.75 0 011.25.83l-1.026 1.554A2.25 2.25 0 0110 9h-.25v2.25H9.75v.005a.75.75 0 110-1.505.75.75 0 010 1.505z"></path></svg>
+                        Merged
+                    </span>
+                }
+                else
+                {
+                    <span style="background-color: #10b981; color: white; padding: 6px 12px; border-radius: 16px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.25 2.25 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.25 2.25 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"></path></svg>
+                        Open
+                    </span>
+                }
+                <div style="font-size: 14px; color: #4b5563;">
+                    <span style="font-weight: 600; color: #111827;">@pullRequest.Issue?.Creator?.Username</span> wants to merge changes from 
+                    <code style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #111827;">@pullRequest.SourceBranch</code> into 
+                    <code style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #111827;">@pullRequest.TargetBranch</code>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 24px;">
+            <div style="flex-grow: 1; max-width: 700px;">
+                <!-- Original Issue Body -->
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                    <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
+                        @(pullRequest.Issue?.Creator?.Username?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                    </div>
+                    <div style="flex-grow: 1; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                        <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
+                            <span style="font-weight: 600; color: #111827;">@pullRequest.Issue?.Creator?.Username</span> commented on @pullRequest.Issue?.CreatedAt.ToString("MMM d, yyyy")
+                        </div>
+                        <div style="padding: 16px; font-size: 14px; color: #111827; white-space: pre-wrap;">
+                            @(string.IsNullOrEmpty(pullRequest.Issue?.Description) ? "*No description provided.*" : pullRequest.Issue?.Description)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comments -->
+                @if (pullRequest.Issue?.Comments != null)
+                {
+                    @foreach (var comment in pullRequest.Issue.Comments.OrderBy(c => c.CreatedAt))
+                    {
+                        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                            <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
+                                @(comment.Author?.Username?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                            </div>
+                            <div style="flex-grow: 1; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                                <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
+                                    <span style="font-weight: 600; color: #111827;">@comment.Author?.Username</span> commented on @comment.CreatedAt.ToString("MMM d, yyyy")
+                                </div>
+                                <div style="padding: 16px; font-size: 14px; color: #111827; white-space: pre-wrap;">@comment.Content</div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (diffContent != null)
+                {
+                    <div style="margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                        <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>Changes</span>
+                        </div>
+                        <div style="padding: 16px; overflow-x: auto; font-family: monospace; font-size: 12px; background-color: #ffffff; white-space: pre-wrap;">
+                            <code class="language-diff">@diffContent</code>
+                        </div>
+                    </div>
+                }
+
+                <!-- Add Comment Form -->
+                <div style="display: flex; gap: 16px; margin-top: 24px;">
+                    <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
+                        <!-- Assuming the current user is typing -->
+                        +
+                    </div>
+                    <div style="flex-grow: 1; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                        <div style="background-color: #f9fafb; padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 14px; color: #374151;">
+                            Leave a comment
+                        </div>
+                        <div style="padding: 8px;">
+                            <textarea @bind="newComment" rows="4" placeholder="Leave a comment" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px; resize: vertical; margin-bottom: 8px;"></textarea>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button @onclick="AddComment" disabled="@isSubmittingComment" style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                                    Comment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div style="width: 280px; flex-shrink: 0;">
+                <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; background-color: #f9fafb;">
+                    <h3 style="margin-top: 0; font-size: 14px; font-weight: 600; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px;">Merge Pull Request</h3>
+                    
+                    @if (pullRequest.IsMerged)
+                    {
+                        <div style="color: #4b5563; font-size: 13px;">
+                            <span style="font-weight: 600; color: #111827;">Merged</span> in commit <code style="background-color: #e5e7eb; padding: 2px 4px; border-radius: 4px;">@(pullRequest.MergeCommitSha?.Substring(0, 7) ?? "")</code>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (isCheckingConflict)
+                        {
+                            <div style="color: #6b7280; font-size: 13px;">Checking for conflicts...</div>
+                        }
+                        else if (hasConflicts)
+                        {
+                            <div style="color: #b91c1c; font-size: 13px; font-weight: 500; margin-bottom: 12px;">
+                                <svg style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5z"></path></svg>
+                                This branch has conflicts that must be resolved.
+                            </div>
+                            <button disabled style="width: 100%; background-color: #d1d5db; color: #4b5563; border: 1px solid #9ca3af; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: not-allowed;">
+                                Merge blocked
+                            </button>
+                        }
+                        else
+                        {
+                            <div style="color: #047857; font-size: 13px; font-weight: 500; margin-bottom: 12px;">
+                                <svg style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>
+                                This branch has no conflicts with the base branch.
+                            </div>
+                            <button @onclick="MergePullRequest" disabled="@isMerging" style="width: 100%; background-color: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                                @(isMerging ? "Merging..." : "Merge pull request")
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = "";
+
+    [Parameter]
+    public string RepoName { get; set; } = "";
+
+    [Parameter]
+    public int LocalId { get; set; }
+
+    private Repository? repository;
+    private PullRequest? pullRequest;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? diffContent;
+    
+    private bool isCheckingConflict = false;
+    private bool hasConflicts = false;
+    private bool isMerging = false;
+
+    private string newComment = "";
+    private bool isSubmittingComment = false;
+    private int currentUserId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid))
+                {
+                    currentUserId = uid;
+                }
+            }
+
+            repository = await DbContext.Repositories
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+
+            if (repository != null)
+            {
+                pullRequest = await PullRequestService.GetPullRequestAsync(repository.Id, LocalId);
+                
+                if (pullRequest != null)
+                {
+                    diffContent = await PullRequestService.GetPullRequestDiffAsync(repository.Id, pullRequest);
+                    
+                    if (!pullRequest.IsMerged)
+                    {
+                        isCheckingConflict = true;
+                        StateHasChanged();
+                        hasConflicts = await PullRequestService.CheckConflictAsync(repository.Id, pullRequest);
+                        isCheckingConflict = false;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load pull request: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task MergePullRequest()
+    {
+        if (currentUserId == 0)
+        {
+            errorMessage = "You must be logged in to merge.";
+            return;
+        }
+
+        isMerging = true;
+        errorMessage = null;
+
+        try
+        {
+            await PullRequestService.MergePullRequestAsync(repository!.Id, pullRequest!, currentUserId);
+            // Refresh state
+            pullRequest = await PullRequestService.GetPullRequestAsync(repository.Id, LocalId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Merge failed: " + ex.Message;
+        }
+        finally
+        {
+            isMerging = false;
+        }
+    }
+
+    private async Task AddComment()
+    {
+        if (string.IsNullOrWhiteSpace(newComment) || currentUserId == 0 || pullRequest?.Issue == null)
+            return;
+
+        isSubmittingComment = true;
+
+        try
+        {
+            await IssueService.AddCommentAsync(pullRequest.IssueId, currentUserId, newComment);
+            newComment = "";
+            
+            // Refresh comments
+            pullRequest = await PullRequestService.GetPullRequestAsync(repository!.Id, LocalId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to add comment: " + ex.Message;
+        }
+        finally
+        {
+            isSubmittingComment = false;
+        }
+    }
+}
