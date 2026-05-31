@@ -1,53 +1,33 @@
 ---
-status: completed
-phase: 05-prs-code-review
-source: 01-SUMMARY.md, 02-SUMMARY.md
-started: 2026-05-30T15:05:22Z
-updated: 2026-05-30T15:05:22Z
+phase: 5
+status: success
 ---
 
-## Current Test
+# Phase 5 UAT Results
 
-number: 5
-name: Merge Pull Request
-expected: |
-  User clicks "Merge pull request" in the sidebar. The pull request is merged into the target branch. The status changes to "Merged", the merge button disappears or shows the merge commit SHA, and the PR is closed.
-awaiting: 
+## Test Cases
 
-## Tests
-
-### 1. Navigate to Pull Requests
-expected: |
-  User visits a repository page and clicks "Pull Requests" tab. The PR list page loads and shows the "Create Pull Request" button. If there are no PRs, a placeholder message appears.
-result: [pass]
+### 1. PR List & Form Access
+- **Instructions**: Navigate to the Pull Requests tab of your repository (`/{username}/{repoName}/pulls`). Click "Create Pull Request".
+- **Expected Outcome**: The PR list loads, and you can successfully access the PR creation form.
+- **Status**: ✅ PASSED
 
 ### 2. Create a Pull Request
-expected: |
-  User clicks "Create Pull Request", selects Source and Target branches, fills in title and description, and clicks "Create Pull Request". User is redirected to the newly created Pull Request detail page.
-result: [pass]
+- **Instructions**: On the form, select a source branch and target branch. (Note: You may need to use an actual Git client to push a second branch with changes if you haven't already). Enter a title and description, then submit.
+- **Expected Outcome**: The PR is created and you are redirected to the PR details page (`/{username}/{repoName}/pulls/{localId}`).
+- **Status**: ✅ PASSED
 
-### 3. View Pull Request Details and Diff
-expected: |
-  User views the Pull Request detail page. The PR title, status (Open), source and target branches are shown. The original description is visible. Below, a "Changes" section shows the inline Diff between branches.
-result: [pass]
+### 3. Diff Viewer
+- **Instructions**: On the PR details page, look at the "Files Changed" or diff view.
+- **Expected Outcome**: Code changes are displayed as a unified diff with proper syntax highlighting.
+- **Status**: ✅ PASSED
 
-### 4. Add a Comment
-expected: |
-  User types a comment in the "Leave a comment" box and clicks "Comment". The new comment appears immediately in the Conversation section above the Diff viewer.
-result: [pass]
+### 4. Commenting
+- **Instructions**: Navigate to the "Conversation" section of the PR. Write a comment and submit it.
+- **Expected Outcome**: The comment appears in the timeline successfully.
+- **Status**: ✅ PASSED
 
-### 5. Merge Pull Request
-expected: |
-  User clicks "Merge pull request" in the sidebar. The pull request is merged into the target branch. The status changes to "Merged", the merge button disappears or shows the merge commit SHA, and the PR is closed.
-result: [pass]
-
-## Summary
-
-total: 5
-passed: 5
-issues: 0
-pending: 0
-skipped: 0
-
-## Gaps
-
+### 5. Merging
+- **Instructions**: Click the "Merge Pull Request" button.
+- **Expected Outcome**: The PR is marked as Merged, and the issue is closed. (The target branch now includes the commits from the source branch).
+- **Status**: ✅ PASSED
