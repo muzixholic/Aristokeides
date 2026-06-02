@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Issue> Issues => Set<Issue>();
     public DbSet<PullRequest> PullRequests => Set<PullRequest>();
     public DbSet<IssueComment> IssueComments => Set<IssueComment>();
+    public DbSet<SshKey> SshKeys => Set<SshKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +96,19 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(c => c.AuthorId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SshKey>(entity =>
+        {
+            entity.HasIndex(k => k.Fingerprint).IsUnique();
+            entity.Property(k => k.Label).HasMaxLength(256);
+            entity.Property(k => k.PublicKey).HasColumnType("text");
+            entity.Property(k => k.Fingerprint).HasMaxLength(256);
+
+            entity.HasOne(k => k.User)
+                  .WithMany(u => u.SshKeys)
+                  .HasForeignKey(k => k.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
