@@ -41,5 +41,7 @@
 
 ## 🔗 Traceability (추적성)
 
-*(이 섹션은 로드맵 정의 도구(`gsd-roadmapper`)에 의해 자동으로 채워집니다.)*
-- **Phase N**: SSH-01, SSH-02 ...
+- **Phase 6**: SSH-01, SSH-02, SSH-03, SSH-04, SSH-05, SSH-06
+- **Phase 7**: SSH-07
+- **Phase 8**: CODE-04, CODE-06, CODE-08
+- **Phase 9**: CODE-05, CODE-07, CODE-09, CODE-10, CODE-11

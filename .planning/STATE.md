@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: SSH & Advanced Code Review
 status: planning
-last_updated: "2026-06-02T03:37:15.838Z"
+last_updated: "2026-06-02T12:51:41+09:00"
 last_activity: 2026-06-02
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-29)
+See: .planning/PROJECT.md (updated 2026-06-02)
 
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
-**Status:** Executing Phase 05
-**Current focus:** Phase 05 — prs-code-review
-**Current Position:** Plan 01 of Phase 04 complete. Ready for Plan 02.
+**Status:** Planning Milestone v1.1
+**Current focus:** Phase 06 — SSH Key & Connectivity
+**Current Position:** Milestone v1.1 planning complete. Ready to start Phase 6.
 
 ## Last Session
 
-**Stopped at:** Phase 5 UI-SPEC approved
-**Resume file:** .planning/phases/05-prs-code-review/05-UI-SPEC.md
+**Stopped at:** Milestone v1.1 Roadmap definition
+**Resume file:** .planning/ROADMAP.md
 
 ## Decisions
 
@@ -41,73 +41,7 @@ See: .planning/PROJECT.md (updated 2026-05-29)
 - **D-08 (Phase 4):** CreatorId uses DeleteBehavior.Restrict to prevent accidental user deletion with existing issues.
 - **D-09 (Phase 4):** AssigneeId uses DeleteBehavior.SetNull so unassigning is safe when users are removed.
 - **D-10 (Phase 4):** Composite unique index on (RepositoryId, LocalId) enforces per-repo issue numbering.
-- [Phase 04]: ---
-
-phase: "04"
-plan: "02"
-subsystem: issues
-tags: [ui, kanban, blazor]
-requires: [01-PLAN.md]
-provides: [IssueService, Kanban Board]
-affects: [UI]
-tech-stack.added: []
-tech-stack.patterns: [Blazor InteractiveServer, Entity Framework Core Transactions]
-key-files.created: 
-
-  - Aristokeides.Api/Services/IssueService.cs
-  - Aristokeides.Api/Components/Pages/RepoIssues.razor
-  - Aristokeides.Api/Components/Pages/RepoIssueDetail.razor
-  - Aristokeides.Api/Components/Pages/RepoIssueForm.razor
-
-key-files.modified: 
-
-  - Aristokeides.Api/Program.cs
-
-key-decisions:
-
-  - LocalId is generated safely via EF Core Transactions with MaxAsync and +1.
-  - Kanban drag and drop uses HTML5 drag events on Blazor InteractiveServer.
-
-requirements-completed: [ISSU-01, ISSU-02]
-duration: 2 min
-completed: 2026-05-30T11:24:26Z
----
-
-# Phase 04 Plan 02: Issues UI & Interaction Summary
-
-Implemented IssueService for Kanban functionality and created the interactive Blazor UI components for issue creation, editing, closing, and drag-and-drop state changes.
-
-## Execution Metrics
-
-- **Start Time:** 2026-05-30T11:22:00Z
-- **End Time:** 2026-05-30T11:24:26Z
-- **Duration:** 2 min
-- **Tasks Executed:** 3
-- **Files Modified:** 5
-
-## Deviations from Plan
-
-None - plan executed exactly as written.
-
-## Self-Check: PASSED
-
-## Next Phase Readiness
-
-Phase complete, ready for next step
 
 ## Blockers
 
-- None
-
-## Performance Metrics
-
-| Phase | Plan | Duration | Notes |
-|-------|------|----------|-------|
-| Phase 04 P02 | 2 min | 3 tasks | 5 files |
-
-## Current Position
-
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-02 — Milestone v1.1 started
+- 없음
