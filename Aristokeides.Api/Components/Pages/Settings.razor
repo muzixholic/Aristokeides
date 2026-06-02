@@ -1,0 +1,271 @@
+@page "/settings"
+@using System.Net.Http.Json
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Controllers
+@using Microsoft.JSInterop
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>Settings</PageTitle>
+
+<div style="max-width: 800px; margin: 32px auto; padding: 24px; background: var(--dominant, #FFFFFF); border: 1px solid #e5e7eb; border-radius: 8px;">
+    <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">User Settings</h1>
+
+    <!-- Tab Navigation -->
+    <div style="display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px;">
+        <button type="button" @onclick="() => SwitchTab(false)" style="padding: 8px 16px; border: none; background: @(isSshKeysTab ? "#f3f4f6" : "#FFFFFF"); color: @(isSshKeysTab ? "#4b5563" : "#2563eb"); border-bottom: @(isSshKeysTab ? "none" : "2px solid #2563eb"); font-weight: 600; cursor: pointer;">
+            General Settings
+        </button>
+        <button type="button" @onclick="() => SwitchTab(true)" style="padding: 8px 16px; border: none; background: @(isSshKeysTab ? "#FFFFFF" : "#f3f4f6"); color: @(isSshKeysTab ? "#2563eb" : "#4b5563"); border-bottom: @(isSshKeysTab ? "2px solid #2563eb" : "none"); font-weight: 600; cursor: pointer;">
+            SSH Keys
+        </button>
+    </div>
+
+    @if (!isSshKeysTab)
+    {
+        <!-- General Settings Tab Content -->
+        <div>
+            <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">General Settings</h2>
+            <p style="color: #6b7280;">General profile settings are currently not implemented.</p>
+        </div>
+    }
+    else
+    {
+        <!-- SSH Keys Tab Content -->
+        <div>
+            <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Add SSH Key</h2>
+
+            @if (errorMessage != null)
+            {
+                <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #fca5a5;">
+                    @errorMessage
+                </div>
+            }
+            @if (successMessage != null)
+            {
+                <div style="background-color: #d1fae5; color: #065f46; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #6ee7b7;">
+                    @successMessage
+                </div>
+            }
+
+            <form @submit:preventDefault="true" @onsubmit="RegisterKeyAsync">
+                <div style="margin-bottom: 16px;">
+                    <label for="key-name" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Key Name</label>
+                    <input type="text" id="key-name" @bind="newKeyName" disabled="@isSubmitting" placeholder="e.g. my-ssh-key-comment" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 14px;" />
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label for="public-key" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Public Key</label>
+                    <textarea id="public-key" @bind:event="oninput" @bind="newPublicKey" @onkeyup="HandleKeyInput" disabled="@isSubmitting" placeholder="Begins with 'ssh-rsa', 'ssh-ed25519', or 'ecdsa-sha2-'" rows="6" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+                </div>
+
+                <button type="submit" disabled="@isSubmitting" style="padding: 10px 20px; background: #2563eb; color: #FFFFFF; border: none; border-radius: 4px; font-weight: 600; cursor: @(isSubmitting ? "not-allowed" : "pointer"); opacity: @(isSubmitting ? 0.7 : 1);">
+                    @(isSubmitting ? "Adding..." : "Add SSH Key")
+                </button>
+            </form>
+
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+
+            <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Your SSH Keys</h2>
+
+            @if (isLoadingKeys)
+            {
+                <p style="color: #6b7280; font-size: 14px;">Loading keys...</p>
+            }
+            else if (sshKeys.Count == 0)
+            {
+                <div style="padding: 48px 16px; text-align: center; background: #f9fafb; border: 1px dashed #e5e7eb; border-radius: 6px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #374151;">No SSH Keys</h3>
+                    <p style="color: #6b7280; font-size: 14px; margin: 0;">There are no SSH keys associated with your account. Add one to enable SSH-based git actions.</p>
+                </div>
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    @foreach (var key in sshKeys)
+                    {
+                        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; background: #ffffff;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">
+                                    🔑 @key.Label (@GetKeyType(key.PublicKey))
+                                </div>
+                                <div style="font-family: monospace; font-size: 12px; color: #6b7280; margin-bottom: 4px;">
+                                    Fingerprint: @key.Fingerprint
+                                </div>
+                                <div style="font-size: 12px; color: #9ca3af;">
+                                    Added on @key.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")
+                                </div>
+                            </div>
+                            <button type="button" @onclick="() => DeleteKeyAsync(key)" style="padding: 6px 12px; background: #ef4444; color: #ffffff; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                Delete
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isSshKeysTab = true; // SSH Keys Tab is active by default
+    private bool isLoadingKeys = true;
+    private bool isSubmitting = false;
+
+    private string? errorMessage;
+    private string? successMessage;
+
+    private string newKeyName = "";
+    private string newPublicKey = "";
+
+    private List<SshKey> sshKeys = new();
+
+    private void SwitchTab(bool sshTab)
+    {
+        isSshKeysTab = sshTab;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadKeysAsync();
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient();
+        client.BaseAddress = new Uri(Navigation.BaseUri);
+        if (HttpContextAccessor.HttpContext?.Request.Headers.TryGetValue("Cookie", out var cookie) == true)
+        {
+            client.DefaultRequestHeaders.Add("Cookie", cookie.ToString());
+        }
+        return client;
+    }
+
+    private async Task LoadKeysAsync()
+    {
+        isLoadingKeys = true;
+        try
+        {
+            using var client = CreateHttpClient();
+            var response = await client.GetFromJsonAsync<List<SshKey>>("api/sshkeys");
+            if (response != null)
+            {
+                sshKeys = response;
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "An error occurred while loading SSH keys.";
+        }
+        finally
+        {
+            isLoadingKeys = false;
+        }
+    }
+
+    private void HandleKeyInput()
+    {
+        // Auto-populate comment if Name is empty
+        if (!string.IsNullOrWhiteSpace(newPublicKey) && string.IsNullOrWhiteSpace(newKeyName))
+        {
+            var parts = newPublicKey.Trim().Split(' ', 3);
+            if (parts.Length >= 3)
+            {
+                var comment = parts[2].Trim();
+                if (!string.IsNullOrWhiteSpace(comment))
+                {
+                    newKeyName = comment;
+                }
+            }
+        }
+    }
+
+    private async Task RegisterKeyAsync()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(newPublicKey))
+        {
+            errorMessage = "Invalid key format. Only Ed25519, ECDSA, and RSA (3072 bits or higher) keys are supported.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            using var client = CreateHttpClient();
+            var response = await client.PostAsJsonAsync("api/sshkeys", new RegisterSshKeyRequest(newKeyName, newPublicKey));
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var addedKeyName = string.IsNullOrWhiteSpace(newKeyName) ? "SSH key" : newKeyName;
+                successMessage = $"SSH key \"{addedKeyName}\" was successfully added.";
+                newKeyName = "";
+                newPublicKey = "";
+                await LoadKeysAsync();
+            }
+            else
+            {
+                var errObj = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                errorMessage = errObj?.Message ?? "An error occurred while adding the key. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "An error occurred while adding the key. Please try again.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteKeyAsync(SshKey key)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var message = $"Delete SSH Key: Are you sure you want to permanently delete the SSH key \"{key.Label}\"?";
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", message);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            using var client = CreateHttpClient();
+            var response = await client.DeleteAsync($"api/sshkeys/{key.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadKeysAsync();
+            }
+            else
+            {
+                errorMessage = "Failed to delete the SSH key.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "An error occurred while deleting the SSH key.";
+        }
+    }
+
+    private string GetKeyType(string publicKey)
+    {
+        if (publicKey.StartsWith("ssh-rsa")) return "RSA";
+        if (publicKey.StartsWith("ssh-ed25519")) return "Ed25519";
+        if (publicKey.StartsWith("ecdsa-sha2-")) return "ECDSA";
+        return "Unknown";
+    }
+
+    private class ErrorResponse
+    {
+        public string Message { get; set; } = "";
+    }
+}
