@@ -1,9 +1,61 @@
 # PITFALLS.md
 
-## Critical Mistakes in Git Hosting
-- **Memory Leaks in LibGit2Sharp**: LibGit2Sharp objects are unmanaged. Failing to `Dispose()` Repository objects leads to massive memory leaks.
-  - *Prevention*: Always use `using` blocks for `Repository` and related Git objects.
-- **Buffering Git Smart HTTP**: Buffering large git pushes in memory (e.g., in ASP.NET Core middleware) will crash the server.
-  - *Prevention*: Stream directly from request body to the Git process/LibGit2Sharp.
-- **N+1 Queries on Commit History**: Fetching commit authors from the DB in a loop when rendering the commit log.
-  - *Prevention*: Batch load or store essential metadata in the Git commit itself.
+## Git 호스팅 관련 주요 실수 (Critical Mistakes in Git Hosting)
+
+### 1. LibGit2Sharp 메모리 누수
+- **설명**: LibGit2Sharp는 비관리형 C 라이브러리인 `libgit2`를 감싸고 있습니다. `Repository`나 `Tree`, `Commit` 등 관련 Git 객체의 사용이 끝난 후 즉시 리소스를 해제(`Dispose()`)하지 않으면 가비지 컬렉터가 메모리를 수거하지 못해 대규모 메모리 누수가 발생합니다.
+- **예방책**: 모든 Git 작업 시 `using` 문을 사용하거나 명시적으로 `Dispose()`가 호출되도록 생명주기를 엄격하게 관리해야 합니다.
+- **검증 신뢰도**: **HIGH** (LibGit2Sharp 공식 문서 및 다수의 .NET 오픈소스 사례에서 검증됨)
+
+### 2. Git 스마트 HTTP 요청 버퍼링
+- **설명**: ASP.NET Core 미들웨어 등에서 대용량 Git Push 요청 본문을 메모리에 버퍼링(`byte[]` 또는 대용량 String 저장)하면 대규모 트래픽 유입 시 즉시 Out Of Memory(OOM)가 발생하여 서버가 전체 다운됩니다.
+- **예방책**: 요청 본문 스트림(Request Body Stream)을 중간 버퍼링 없이 Git 프로세스나 LibGit2Sharp 스트림으로 직접 스트리밍(`CopyToAsync`)해야 합니다.
+- **검증 신뢰도**: **HIGH** (Gitea, GitLab 등 대규모 Git 호스팅 엔진의 스트리밍 아키텍처에서 공통으로 강조되는 필수 사항)
+
+### 3. 커밋 히스토리 조회 시 N+1 쿼리
+- **설명**: 커밋 로그 목록을 웹 화면에 렌더링할 때 각 커밋의 작성자 정보나 추가 데이터를 루프 내에서 DB로 개별 조회하면 극심한 속도 저하를 유발합니다.
+- **예방책**: 관계형 데이터를 가져올 때 조인 쿼리를 사용하여 배치 로드하거나, Git 커밋 자체에 포함된 이메일/이름 정보를 기반으로 화면을 렌더링하도록 간소화해야 합니다.
+- **검증 신뢰도**: **HIGH** (EF Core의 지연 로딩 오용 시 자주 발생하는 전형적인 안티패턴)
+
+---
+
+## SSH Git 지원 관련 주요 함정 (Critical Mistakes in SSH Git Support)
+
+### 1. OS 포트 22 충돌 및 권한 문제 (Port 22 Bind & Conflict)
+- **설명**: 대부분의 리눅스/윈도우 호스트 OS에는 이미 시스템 레벨의 OpenSSH 데몬 등이 22번 포트를 선점하고 있습니다. .NET 프로세스가 22번 포트를 직접 바인딩을 시도하면 포트 충돌(`SocketException: Address already in use`)이 발생합니다. 또한, Unix 계열 OS에서는 1024번 이하 포트에 바인딩하려면 root/관리자 권한이 요구되어 보안상 취약점을 가집니다.
+- **예방책**: .NET 내장 SSH 서버는 설정 파일(`appsettings.json`)을 통해 제어 가능한 2222번 등 고포트(High Port)를 기본값으로 사용하게 만들고, 운영 환경에서는 Docker 포트 포워딩이나 iptables 등을 통해 외부 22번 포트 요청을 .NET 앱 포트로 매핑하도록 처리해야 합니다.
+- **검증 신뢰도**: **HIGH** (Gitea 및 온프레미스 Git 제품군이 채택하는 표준 설치 규격)
+
+### 2. 셸 이스케이프 및 커맨드 인젝션 보안 취약점 (Shell Escaping & Command Injection)
+- **설명**: SSH 클라이언트가 연결 후 실행을 요청하는 커맨드 문자열(예: `git-receive-pack 'repo.git'`)을 셸(Bash, CMD 등)에 그대로 전달해 실행시키면, 사용자 입력값에 포함된 셸 메타문자(`;`, `&&`, `|`, `$()`)를 이용한 임의 명령 실행(RCE)이 가능해집니다.
+- **예방책**: 셸 프로세스(CMD/Bash)를 실행 경로에 포함시키지 않고, 인입되는 명령어 문자열을 파싱하여 타깃 명령어(`git-upload-pack`, `git-receive-pack`, `git-upload-archive`)가 검증된 허용 목록(Whitelist)에 있는 경우에만 직접 실행해야 합니다. 또한, 경로 탐색(`../`)을 통한 저장소 이외 파일 접근을 차단하기 위해 절대 경로 변환 및 검증을 필수적으로 도입해야 합니다.
+- **검증 신뢰도**: **HIGH** (CVE-2017-1000117 등 과거 Git 관련 SSH RCE 취약점 패턴 분석 결과)
+
+### 3. 서버 호스트 키 영속화 누락 (Host Key Persistence)
+- **설명**: SSH 서버가 구동될 때마다 호스트 키(Host Private Key)를 메모리 상에서 무작위로 새로 생성하면, 서버 재시작 시마다 클라이언트 측에서 "Host Key Verification Failed" 경고를 마주하게 되어 사용자 경험이 악화되고 중간자 공격(MITM) 탐지가 불가능해집니다.
+- **예방책**: 최초 기동 시 Ed25519 또는 RSA 호스트 프라이빗 키 PEM 파일을 데이터 디렉토리에 영구 저장하고, 이후 기동 시에는 이 파일을 재사용하도록 설계해야 합니다.
+- **검증 신뢰도**: **HIGH** (SSH 프로토콜의 규격 및 보안 요구사항)
+
+### 4. 공개키 인증 성능 및 보안 사양 관리
+- **설명**: SSH 클라이언트와 핸드셰이크 시점에 구식 암호화 규격(ssh-dss, rsa-sha1)만을 지원할 경우 최신 SSH 클라이언트(OpenSSH 8.8+)에서 연결을 원천 차단당합니다. 또한, 사용자의 SSH Key 테이블을 검색할 때 인덱싱이 불량하면 매 인증마다 극심한 DB 조회가 발생합니다.
+- **예방책**: 최신 암호 규격인 `Ed25519`, `ECDSA-SHA2`, `RSA-SHA2` 계열을 필수적으로 지원하도록 구성해야 합니다. 또한 DB의 SSH Key 테이블에서 공개키의 고유 지문(Fingerprint) 컬럼을 생성하고 인덱스를 생성하여 O(1) 수준으로 빠른 매칭을 보장해야 합니다.
+- **검증 신뢰도**: **HIGH** (OpenSSH 최신 규격 호환성 기준 및 인덱스 튜닝 기본 법칙)
+
+---
+
+## 라인 단위 코드 리뷰 관련 주요 함정 (Critical Mistakes in Line-by-line Code Review)
+
+### 1. 신규 커밋 푸시 시 댓글 드리프트 현상 (Comment Drifting)
+- **설명**: PR에 의견을 작성한 뒤 사용자가 대상 브랜치에 신규 커밋을 추가하거나 rebase/force-push를 수행하여 파일의 행 수가 변하면, 댓글이 원래 가리키던 코드 라인에서 밀려서 엉뚱한 위치를 가리키게 되는 드리프트 현상이 발생합니다.
+- **예방책**: 댓글 작성 시점의 원본 커밋 SHA, 파일 경로, 원본 라인 번호(Line Number), 그리고 해당 라인이 포함된 변경 덩어리(Hunk)의 전후 3~5행 컨텍스트(Context Lines)를 DB에 함께 기록해야 합니다. 이후 파일이 수정되면 두 버전의 텍스트 diff를 실시간(또는 캐싱) 분석하여, 변경된 컨텍스트 위치로 댓글의 위치를 보정해주는 라인 매핑 기능을 구현해야 합니다.
+- **검증 신뢰도**: **MEDIUM** (Myers Diff 기반 라인 트래킹 구현 난이도가 높으나, GitHub/GitLab의 공통된 보정 매커니즘임)
+
+### 2. 수정/삭제된 코드 라인에 대한 댓글 처리 (Obsolete/Outdated Comments)
+- **설명**: 댓글이 달려 있던 코드 라인 자체가 이후의 추가 커밋에 의해 수정되거나 완전히 삭제되는 경우, 최신 변경점 보기(Diff View)에서 댓글을 어느 위치에 매핑할지 불명확해지며, 억지로 표시하려다 뷰 렌더링이 깨지는 현상이 발생합니다.
+- **예방책**: 최신 diff 분석 결과 댓글 라인이 지워졌거나 크게 달라진 경우 상태값을 `Outdated` 또는 `Obsolete`로 전환합니다. UI 상에서는 이를 최신 Diff 코드 사이에 강제로 노출하는 대신 접이식(Accordion) 대화록 영역으로 하단에 노출하고, 작성 당시의 코드 조각(Hunk snippet)과 함께 보여줌으로써 토론 맥락을 유지해야 합니다.
+- **검증 신뢰도**: **HIGH** (GitHub의 'Outdated' 대화 감추기 및 GitLab의 접이식 스레드 UI 검증 사례)
+
+### 3. Diff 라인 방향(Side) 분류 및 파일명 변경 (Diff Side & Rename Tracking)
+- **설명**: Git Diff는 수정 전(Left-side/Old)과 수정 후(Right-side/New)가 나란히 제공됩니다. 댓글이 왼쪽 사이드의 삭제된 라인을 타깃팅한 것인지, 오른쪽 사이드의 추가된 라인을 타깃팅한 것인지 기록하지 않으면 뷰가 모호해집니다. 또한, 파일의 이름이 바뀌면(Rename) 이전 파일명 경로로 저장된 댓글이 모두 유실될 위험이 있습니다.
+- **예방책**: 댓글 DB 엔터티에 `Side` 열(`LEFT` 또는 `RIGHT`)을 두어 어떤 원본 변경 버전을 참조하는지 기록하고, Git Diff 처리 시 유사도 기준 파일 이동 검증(LibGit2Sharp의 `RenameDetection` 설정)을 필수 적용하여 파일명이 달라져도 댓글의 누적 추적이 가능하게 만들어야 합니다.
+- **검증 신뢰도**: **HIGH** (Git Diff 알고리즘 및 파일 추적 메커니즘의 근본적인 요구사항)
