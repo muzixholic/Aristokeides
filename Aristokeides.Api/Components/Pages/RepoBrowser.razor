@@ -1,10 +1,13 @@
 @page "/{username}/{repoName}"
 @page "/{username}/{repoName}/tree/{branch}"
 @page "/{username}/{repoName}/tree/{branch}/{*path}"
+@using Microsoft.JSInterop
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject Aristokeides.Api.Services.GitBrowserService GitService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
 @inject NavigationManager NavManager
+@inject Aristokeides.Api.Services.Ssh.SshUrlHelper SshUrlHelper
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
 <PageTitle>@RepoName - Aristokeides</PageTitle>
 
@@ -19,8 +22,26 @@ else if (isEmptyRepo)
     <div style="text-align: center; margin-top: 48px;">
         <h2>빈 저장소입니다</h2>
         <p>아직 커밋된 파일이 없습니다. Git 클라이언트를 사용하여 코드를 푸시해 주세요.</p>
-        <pre style="background: var(--secondary); padding: 16px; border-radius: 4px; display: inline-block; text-align: left;">
-git remote add origin http://localhost:5000/@Username/@(RepoName).git
+        
+        <div style="margin-bottom: 16px;">
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); padding: 4px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                <button type="button" @onclick='() => SetProtocol("HTTP")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "HTTP" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "HTTP" ? "white" : "inherit");">HTTP</button>
+                <button type="button" @onclick='() => SetProtocol("SSH")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "SSH" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "SSH" ? "white" : "inherit");">SSH</button>
+                <span style="font-family: monospace; font-size: 13px; padding: 4px 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; min-width: 250px;">
+                    @CurrentCloneUrl
+                </span>
+                <button type="button" @onclick="CopyUrlToClipboard" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e7eb; background: white; cursor: pointer; position: relative;">
+                    📋
+                    @if (isCopied)
+                    {
+                        <span style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px;">Copied!</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <pre style="background: var(--secondary); padding: 16px; border-radius: 4px; display: inline-block; text-align: left; font-family: monospace;">
+git remote add origin @CurrentCloneUrl
 git push -u origin main
         </pre>
     </div>
@@ -38,6 +59,21 @@ else
             <span style="margin-left: 16px;">
                 <a href="/@Username/@RepoName/commits/@Branch" style="font-weight: 600;">커밋 내역 보기 (View Commits)</a>
             </span>
+        </div>
+
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); padding: 4px; border-radius: 4px; border: 1px solid #e5e7eb;">
+            <button type="button" @onclick='() => SetProtocol("HTTP")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "HTTP" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "HTTP" ? "white" : "inherit");">HTTP</button>
+            <button type="button" @onclick='() => SetProtocol("SSH")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "SSH" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "SSH" ? "white" : "inherit");">SSH</button>
+            <span style="font-family: monospace; font-size: 13px; padding: 4px 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; min-width: 250px;">
+                @CurrentCloneUrl
+            </span>
+            <button type="button" @onclick="CopyUrlToClipboard" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e7eb; background: white; cursor: pointer; position: relative;">
+                📋
+                @if (isCopied)
+                {
+                    <span style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px;">Copied!</span>
+                }
+            </button>
         </div>
     </div>
 
@@ -101,6 +137,36 @@ else
     private List<string> branches = new();
     private List<Aristokeides.Api.Services.GitTreeEntry> entries = new();
     private string? repoPath;
+
+    private string activeProtocol = "HTTP";
+    private bool isCopied = false;
+
+    private string CurrentCloneUrl => activeProtocol == "SSH" 
+        ? SshUrlHelper.GetSshCloneUrl(Username, RepoName) 
+        : SshUrlHelper.GetHttpCloneUrl(Username, RepoName);
+
+    private void SetProtocol(string protocol)
+    {
+        activeProtocol = protocol;
+    }
+
+    private async Task CopyUrlToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", CurrentCloneUrl);
+            isCopied = true;
+            StateHasChanged();
+            
+            await Task.Delay(2000);
+            isCopied = false;
+            StateHasChanged();
+        }
+        catch
+        {
+            // Ignore
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
