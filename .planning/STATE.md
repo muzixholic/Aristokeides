@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: SSH & Advanced Code Review
+milestone_name: milestone
 status: planning
-last_updated: "2026-06-02T12:51:41+09:00"
-last_activity: 2026-06-02
+stopped_at: Phase 6 context gathered
+last_updated: "2026-06-02T03:55:22.213Z"
 progress:
   total_phases: 4
   completed_phases: 0
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-02)
 
 ## Last Session
 
-**Stopped at:** Milestone v1.1 Roadmap definition
-**Resume file:** .planning/ROADMAP.md
+**Stopped at:** Phase 6 context gathered
+**Resume file:** .planning/phases/06-ssh-key-connectivity/06-CONTEXT.md
 
 ## Decisions
 
