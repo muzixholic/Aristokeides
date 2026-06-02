@@ -106,7 +106,7 @@ public class SshServerBackgroundService : BackgroundService
                 }
                 else if (service is ConnectionService connectionService)
                 {
-                    connectionService.CommandOpened += (cmdSender, cmdArgs) => OnCommandOpened(session, cmdArgs);
+                    connectionService.CommandOpened += async (cmdSender, cmdArgs) => await OnCommandOpened(session, cmdArgs);
                 }
             };
         };
@@ -172,7 +172,7 @@ public class SshServerBackgroundService : BackgroundService
         }
     }
 
-    private void OnCommandOpened(Session session, CommandRequestedArgs e)
+    private async Task OnCommandOpened(Session session, CommandRequestedArgs e)
     {
         if (!_sessions.TryGetValue(session, out var state))
         {
@@ -193,6 +193,77 @@ public class SshServerBackgroundService : BackgroundService
             return;
         }
 
-        e.Channel.SendClose(1);
+        // Whitelist check
+        if (!cmd.StartsWith("git-upload-pack") && !cmd.StartsWith("git-receive-pack"))
+        {
+            byte[] errorMessage = System.Text.Encoding.UTF8.GetBytes("Interactive shell is not allowed.\r\n");
+            e.Channel.SendData(errorMessage);
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        // Parse command and argument
+        var parts = cmd.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2)
+        {
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        string commandName = parts[0];
+        string repoPath = parts[1].Trim('\'', '"');
+
+        // Directory Traversal check
+        if (repoPath.Contains(".."))
+        {
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        // Normalize path
+        repoPath = repoPath.TrimStart('/');
+        if (repoPath.EndsWith(".git"))
+        {
+            repoPath = repoPath.Substring(0, repoPath.Length - 4);
+        }
+
+        var pathParts = repoPath.Split('/');
+        if (pathParts.Length != 2)
+        {
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        string ownerName = pathParts[0];
+        string repoName = pathParts[1];
+
+        // Validation against database
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var repository = await dbContext.Repositories
+            .Include(r => r.Owner)
+            .FirstOrDefaultAsync(r => r.Owner != null && r.Owner.Username == ownerName && r.Name == repoName);
+
+        if (repository == null)
+        {
+            byte[] notFound = System.Text.Encoding.UTF8.GetBytes("Repository not found\r\n");
+            e.Channel.SendData(notFound);
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        // Permission check
+        if (repository.OwnerId != state.UserId)
+        {
+            byte[] denied = System.Text.Encoding.UTF8.GetBytes("Permission denied\r\n");
+            e.Channel.SendData(denied);
+            e.Channel.SendClose(1);
+            return;
+        }
+
+        // Pass to bridge
+        var bridge = scope.ServiceProvider.GetRequiredService<SshCommandBridge>();
+        await bridge.RunGitCommandAsync(e.Channel, commandName, repoPath, state);
     }
 }

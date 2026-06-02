@@ -14,5 +14,13 @@
     <Routes />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof hljs !== 'undefined') { hljs.highlightAll(); }
+        });
+        Blazor.addEventListener('enhancedload', () => {
+            if (typeof hljs !== 'undefined') { hljs.highlightAll(); }
+        });
+    </script>
 </body>
 </html>

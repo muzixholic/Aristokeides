@@ -60,6 +60,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<RepositoryCreationChannel>();
 builder.Services.AddHostedService<RepositoryCreationBackgroundWorker>();
 builder.Services.AddSingleton<Aristokeides.Api.Services.Ssh.SshUrlHelper>();
+builder.Services.AddTransient<Aristokeides.Api.Services.Ssh.SshCommandBridge>();
 builder.Services.AddHostedService<Aristokeides.Api.Services.Ssh.SshServerBackgroundService>();
 builder.Services.AddScoped<GitBrowserService>();
 builder.Services.AddScoped<IssueService>();
