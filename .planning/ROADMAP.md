@@ -9,7 +9,7 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 6 | SSH Key & Connectivity | SSH 키 등록/관리 및 FxSsh 기반 임베디드 SSH 서버 기본 연동 | SSH-01, SSH-02, SSH-03, SSH-04, SSH-05, SSH-06 | 3 success criteria |
+| 6 | SSH Key & Connectivity | 1/3 | In Progress|  |
 | 7 | SSH Commit Signature | SSH 키 기반 커밋 디지털 서명 서버 검증 및 Verified 배지 표시 | SSH-07 | 2 success criteria |
 | 8 | PR Inline Comments | PR Diff 화면에서의 인라인 댓글 작성, 저장 및 대화 스레드화 | CODE-04, CODE-06, CODE-08 | 3 success criteria |
 | 9 | Advanced Review Workflow | 리뷰 상태 추적, 일괄 제출, 미해결 코멘트 병합 차단 및 라인 보정(Line Shift) | CODE-05, CODE-07, CODE-09, CODE-10, CODE-11 | 4 success criteria |
