@@ -38,12 +38,12 @@ created: 2026-06-02
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 06-01-01 | 01 | 1 | SSH-01 | T-06-01 / — | 키 유효성 및 RSA 3072 비트 이상 제한 검증 | Unit | `dotnet test --filter "FullyQualifiedName~SshKeyParserTests"` | ❌ W0 | ⬜ pending |
-| 06-01-02 | 01 | 1 | SSH-02 | T-06-04 / — | Fingerprint SHA-256 연산 및 중복 방지 검증 | Unit | `dotnet test --filter "FullyQualifiedName~SshKeyRegistrationTests"` | ❌ W0 | ⬜ pending |
-| 06-01-03 | 01 | 2 | SSH-03 | — | SSH Clone URL 정합성 검증 | Unit | `dotnet test --filter "FullyQualifiedName~RepositoryUrlTests"` | ❌ W0 | ⬜ pending |
-| 06-01-04 | 01 | 2 | SSH-04 | — | `ssh -T` 요청 시 표준 환영 피드백 리턴 | Integration | `dotnet test --filter "FullyQualifiedName~SshTDiagnosticTests"` | ❌ W0 | ⬜ pending |
-| 06-01-05 | 01 | 3 | SSH-05 | T-06-03 / — | DB 키 연계 FxSsh 인증 처리 검증 | Integration | `dotnet test --filter "FullyQualifiedName~SshServerAuthTests"` | ❌ W0 | ⬜ pending |
-| 06-01-06 | 01 | 3 | SSH-06 | T-06-02 / — | 일반 쉘 차단 및 git-receive/upload-pack 파이핑 | Integration | `dotnet test --filter "FullyQualifiedName~SshCommandPipingTests"` | ❌ W0 | ⬜ pending |
+| 06-01-01 | 01 | 1 | SSH-01, SSH-02 | T-06-01 / T-06-02 | 키 유효성(RSA 3072+) 및 Fingerprint 계산 검증 | Unit | `dotnet test --filter "FullyQualifiedName~SshKeyParserTests"` | ❌ W0 | ⬜ pending |
+| 06-01-02 | 01 | 1 | SSH-01, SSH-02 | T-06-03 | 중복 방지 및 등록/삭제 API 및 UI 검증 | Unit/Integration | `dotnet test --filter "FullyQualifiedName~SshKeyRegistrationTests"` | ❌ W0 | ⬜ pending |
+| 06-02-01 | 02 | 2 | SSH-03 | — | SSH Clone URL 정합성 검증 | Unit | `dotnet test --filter "FullyQualifiedName~RepositoryUrlTests"` | ❌ W0 | ⬜ pending |
+| 06-02-02 | 02 | 2 | SSH-04, SSH-05 | T-06-04 / T-06-05 | ssh -T 진단 응답 및 FxSsh DB 연계 인증 검증 | Integration | `dotnet test --filter "FullyQualifiedName~SshTDiagnosticTests"` | ❌ W0 | ⬜ pending |
+| 06-03-01 | 03 | 3 | SSH-06 | T-06-07 | 셸 차단 및 명령어 화이트리스트/경로 검증 | Integration | `dotnet test --filter "FullyQualifiedName~SshServerAuthTests"` | ❌ W0 | ⬜ pending |
+| 06-03-02 | 03 | 3 | SSH-06 | T-06-06 / T-06-08 | OS Git 프로세스 양방향 파이핑 릴레이 검증 | Integration | `dotnet test --filter "FullyQualifiedName~SshCommandPipingTests"` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -51,9 +51,12 @@ created: 2026-06-02
 
 ## Wave 0 Requirements
 
-- [ ] `Aristokeides.Tests/SshKeyParserTests.cs` — stubs for SSH-01
-- [ ] `Aristokeides.Tests/SshServerAuthTests.cs` — stubs for SSH-05, SSH-06
-- [ ] `Aristokeides.Tests/SshTDiagnosticTests.cs` — stubs for SSH-04
+- [ ] `Aristokeides.Tests/SshKeyParserTests.cs` — stubs for SSH-01, SSH-02
+- [ ] `Aristokeides.Tests/SshKeyRegistrationTests.cs` — stubs for SSH-01, SSH-02
+- [ ] `Aristokeides.Tests/RepositoryUrlTests.cs` — stubs for SSH-03
+- [ ] `Aristokeides.Tests/SshTDiagnosticTests.cs` — stubs for SSH-04, SSH-05
+- [ ] `Aristokeides.Tests/SshServerAuthTests.cs` — stubs for SSH-06
+- [ ] `Aristokeides.Tests/SshCommandPipingTests.cs` — stubs for SSH-06
 
 ---
 
