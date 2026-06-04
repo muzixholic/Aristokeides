@@ -1,6 +1,7 @@
 # Project Roadmap
 
 ## Previous Milestones
+
 - [v1.0 Milestone Archive](milestones/v1.0-ROADMAP.md) - Initial Release (Auth, Git Smart HTTP, Repo Browser, Issues, PRs)
 
 ## Current Milestone (v1.1)
@@ -17,6 +18,7 @@
 ### Phase Details
 
 ### Phase 6: SSH Key & Connectivity
+
 - **Goal:** SSH 키 등록/관리 및 FxSsh 기반 임베디드 SSH 서버 기본 연동
 - **Mode:** mvp
 - **Requirements:** SSH-01, SSH-02, SSH-03, SSH-04, SSH-05, SSH-06
@@ -27,6 +29,7 @@
   3. 사용자가 등록된 SSH 키를 기반으로 로컬 터미널에서 SSH 프로토콜(SSH Clone URL)을 통해 Git Clone, Push, Pull 작업을 안전하게 실행할 수 있다.
 
 ### Phase 7: SSH Commit Signature (Completed)
+
 - **Goal:** SSH 키 기반 커밋 디지털 서명 서버 검증 및 Verified 배지 표시
 - **Mode:** mvp
 - **Requirements:** SSH-07
@@ -36,6 +39,7 @@
   - [x] 2. 검증된 커밋에 대해 웹 UI 커밋 히스토리 및 상세 화면에 신뢰할 수 있는 커밋임을 뜻하는 "Verified" 배지를 시각적으로 표시한다.
 
 ### Phase 8: PR Inline Comments
+
 - **Goal:** PR Diff 화면에서의 인라인 댓글 작성, 저장 및 대화 스레드화
 - **Mode:** mvp
 - **Requirements:** CODE-04, CODE-06, CODE-08
@@ -47,10 +51,16 @@
   3. 인라인 댓글에 스레드 형식으로 답글(Reply)을 달 수 있으며, 해결된 토론은 "Resolve conversation"을 통해 접기 처리하고 필요 시 다시 재개할 수 있다.
 
 Plans:
+**Wave 1**
+
 - [ ] 08-01-PLAN.md — PR 인라인 댓글 단일 쓰기/조회 백엔드 핵심 비즈니스 로직 및 기본 UI 슬라이스
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 08-02-PLAN.md — 마크다운 프리뷰, 대댓글 스레드 및 대화 해결/재개 UI 통합 슬라이스
 
 ### Phase 9: Advanced Review Workflow
+
 - **Goal:** 리뷰 상태 추적, 일괄 제출, 미해결 코멘트 병합 차단 및 라인 보정(Line Shift)
 - **Mode:** mvp
 - **Requirements:** CODE-05, CODE-07, CODE-09, CODE-10, CODE-11
