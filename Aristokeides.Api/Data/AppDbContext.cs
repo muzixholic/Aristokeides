@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<PullRequest> PullRequests => Set<PullRequest>();
     public DbSet<IssueComment> IssueComments => Set<IssueComment>();
     public DbSet<SshKey> SshKeys => Set<SshKey>();
+    public DbSet<CommitSignature> CommitSignatures => Set<CommitSignature>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,6 +110,25 @@ public class AppDbContext : DbContext
                   .WithMany(u => u.SshKeys)
                   .HasForeignKey(k => k.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CommitSignature>(entity =>
+        {
+            entity.HasIndex(cs => new { cs.RepositoryId, cs.CommitHash }).IsUnique();
+            entity.Property(cs => cs.CommitHash).HasMaxLength(50);
+            entity.Property(cs => cs.Status).HasMaxLength(50);
+            entity.Property(cs => cs.Algorithm).HasMaxLength(50);
+            entity.Property(cs => cs.KeyFingerprint).HasMaxLength(256);
+
+            entity.HasOne(cs => cs.Repository)
+                  .WithMany()
+                  .HasForeignKey(cs => cs.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cs => cs.SignerUser)
+                  .WithMany()
+                  .HasForeignKey(cs => cs.SignerUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
