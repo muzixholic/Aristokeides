@@ -13,7 +13,7 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 
 ### 2. Git HTTP/SSH 호스팅 (Git Hosting)
 - **Git Smart HTTP**: Git 표준 Smart HTTP 프로토콜(`git-receive-pack`, `git-upload-pack`)을 커스텀 미들웨어로 구현하여 Git 클라이언트를 통한 직접적인 `clone`, `push`, `pull`이 가능합니다.
-- **Git SSH**: `FxSsh` 기반의 경량 임베디드 SSH 서버를 내장하여, SSH 공개키 기반의 안전한 Git Clone, Push, Pull 작업을 지원합니다.
+- **Git Smart SSH**: `FxSsh` 기반의 경량 임베디드 SSH 서버를 내장하여, SSH 공개키 기반의 안전한 Git Clone, Push, Pull 작업을 지원합니다.
 - **보안 및 제어**: SSH 접속 시 대화형 셸(Shell) 요청은 철저히 차단하며, 오직 허가된 Git 명령어(`git-upload-pack`, `git-receive-pack`)만 OS의 Git 프로세스와 비동기 스트림 파이핑을 중계하도록 제한하였습니다.
 - 리포지토리 생성 작업은 백그라운드 큐 및 워커 시스템을 통해 비동기식으로 안정적으로 수행됩니다.
 
@@ -34,9 +34,12 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 - 이슈 본문 및 댓글을 통해 프로젝트 참가자들 간의 의견 조율이 가능합니다.
 
 ### 6. 풀 리퀘스트 & 코드 리뷰 (Pull Request & Code Review)
-- 브랜치 간의 코드 병합을 위한 Pull Request 기능을 지원합니다.
-- 변경된 파일들에 대해 라인 단위 코드 변경 사항(Code Diff)을 시각적으로 편리하게 비교할 수 있습니다.
-- PR 상세 화면에서 코드 리뷰 댓글을 남기거나, 최종 검토 후 대상 브랜치에 안전하게 병합(Merge)할 수 있습니다.
+- **브랜치 병합**: 브랜치 간의 코드 병합을 위한 Pull Request 기능 및 병합 충돌 여부 체크 기능을 제공합니다.
+- **라인 단위 인라인 댓글**: PR 파일 변경 Diff 화면에서 코드의 개별 라인에 마크다운 및 실시간 프리뷰를 지원하는 인라인 댓글을 달 수 있고, 대댓글 작성 및 토론 해결(Resolve)/재개(Unresolve)를 지원합니다.
+- **임시 보관 및 일괄 리뷰 제출**: 댓글을 Pending 상태로 모아두었다가, 요약 설명글과 함께 리뷰 의견(`Comment`, `Approve`, `Request Changes`)을 지정하여 한 번에 일괄 제출(Submit review)할 수 있습니다.
+- **라인 번호 자동 보정 (Line Shift)**: 소스 브랜치에 신규 커밋이 푸시될 때 기존 댓글의 줄 위치를 Myers/Hunk 매핑에 기반해 자동으로 올바르게 밀어주고(Line Shift), 코드가 수정/삭제되어 유실된 경우에는 해당 스레드를 `Outdated` 상태로 자동 전환 및 아코디언 접기 렌더링합니다.
+- **병합 차단 및 관리자 우회**: PR에 해결되지 않은(Unresolved) 토론이 1개라도 존재하는 경우 일반 사용자의 병합(Merge)을 엄격히 차단하되, 관리자(Admin) 권한을 가진 사용자에게만 우회 강제 병합(Force Merge) 옵션을 체크박스를 통해 제공합니다.
+- **승인 자동 리셋**: 소스 브랜치에 새 커밋이 푸시되면 기존 리뷰어들의 승인(`Approved`) 상태를 시스템에서 자동으로 취소(`Dismissed` 전환)하여 소스 변경에 따른 전면 재검토를 유도합니다.
 
 ---
 
@@ -45,7 +48,7 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 - **Backend**: C# / .NET 9.0 (ASP.NET Core)
 - **Frontend**: Blazor Server (Interactive Server Render Mode), Vanilla CSS
 - **Database**: PostgreSQL (Entity Framework Core ORM)
-- **Git Engine**: 로컬 Git 바이너리 연동 및 Git Smart HTTP 프로토콜 수동 파싱
+- **Git Engine**: LibGit2Sharp 연동 및 Git Smart HTTP 프로토콜 수동 파싱
 - **SSH Engine**: `FxSsh` 기반 임베디드 SSH 서버 (ECDsa 호스트 키 알고리즘 적용 및 백그라운드 호스팅)
 - **API Doc**: Swagger UI (JWT Bearer Security 정의 적용)
 
@@ -61,21 +64,27 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
   - [SshCommandBridge.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshCommandBridge.cs): 일반 셸 제한 및 Git SSH 명령어 실행/비동기 스트림 파이핑 중계
   - [SshKeyParser.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshKeyParser.cs): 공개키 유효성 분석 및 지문 생성 도구
   - [SshFingerprintCalculator.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshFingerprintCalculator.cs): SHA-256 지문 계산 유틸리티
+  - [SshSignatureVerificationService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshSignatureVerificationService.cs) & [SshSignatureVerifier.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshSignatureVerifier.cs): SSH 키 기반 커밋 디지털 서명 분석 및 검증 처리기
 - **비즈니스 서비스**:
   - [GitBrowserService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/GitBrowserService.cs): Git 저장소 데이터(커밋, 브랜치, 파일) 조회 서비스
   - [IssueService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/IssueService.cs): 이슈 상태 제어 및 칸반 정렬 서비스
-  - [PullRequestService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/PullRequestService.cs): PR 생성, Diff 분석 및 병합 처리 서비스
+  - [PullRequestService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/PullRequestService.cs): PR 생성, Diff 분석 및 병합 처리, 일괄 리뷰 제출, 커밋 푸시 후처리(라인 보정 및 승인 초기화) 서비스
 - **데이터 레이어**:
   - [AppDbContext.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Data/AppDbContext.cs): PostgreSQL 연결 및 엔티티 매핑 관계 설정 (EF Core)
-  - [Models/SshKey.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models/SshKey.cs): SSH 키 정보 저장 엔티티 모델
-  - [Models/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models): User, Repository, Issue, PullRequest 등 주요 도메인 모델 정의
+  - [Models/PullRequestReview.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models/PullRequestReview.cs): PR 리뷰 상태 저장 엔티티 모델 (신규)
+  - [Models/PullRequestReviewComment.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models/PullRequestReviewComment.cs): PR 라인별 인라인 댓글/답글 저장 모델
+  - [Models/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models): User, Repository, Issue, PullRequest, SshKey, CommitSignature 등 주요 도메인 모델 정의
 - **컨트롤러**:
   - [SshKeysController.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Controllers/SshKeysController.cs): SSH 키 목록 조회, 등록, 삭제를 제공하는 API 컨트롤러
 - **사용자 인터페이스 (Blazor Components)**:
   - [Components/Pages/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages): 전체 화면 뷰 컴포넌트들
     - [Settings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Settings.razor) : 프로필 정보 및 SSH 키 등록/삭제를 지원하는 설정 화면
     - [RepoBrowser.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoBrowser.razor) : HTTP/SSH 클론 URL 선택 및 파일 목록 표시
-    - `RepoBlob.razor` (코드 뷰어), `RepoIssues.razor` (칸반 보드), `RepoPullRequestDetail.razor` (PR 및 코드 디프/리뷰)
+    - [RepoPullRequestDetail.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoPullRequestDetail.razor) : PR 코드 디프, 임시 댓글 작성 및 일괄 제출 UI, 머지 제어 및 관리자 우회 동의 UI
+    - `RepoBlob.razor` (구문 강조 코드 뷰어), `RepoIssues.razor` (칸반 보드)
+- **단위 및 통합 테스트**:
+  - [AdvancedReviewTests.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Tests/Services/AdvancedReviewTests.cs): 일괄 리뷰 제출 및 병합 차단, 푸시 후처리 라인 보정 알고리즘 통합 검증 (신규)
+  - [PushHookIntegrationTests.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Tests/PushHookIntegrationTests.cs) : Push 완료 후 서명 검증 테스트
 
 ---
 
