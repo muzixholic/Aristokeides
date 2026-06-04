@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using Aristokeides.Api.Data;
+using Aristokeides.Api.Services.Ssh;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,7 @@ public class GitSmartHttpMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context, AppDbContext db)
+    public async Task InvokeAsync(HttpContext context, AppDbContext db, SshSignatureVerificationService sigService)
     {
         var path = context.Request.Path.Value;
         if (string.IsNullOrEmpty(path))
@@ -75,6 +76,32 @@ public class GitSmartHttpMiddleware
 
         var basePath = Path.GetFullPath("GitRepos");
         var gitProjectRoot = Path.Combine(basePath, username);
+        var physicalRepoPath = Path.Combine(gitProjectRoot, repoNameWithGit);
+
+        // HTTP Push인지 확인하고, 실행 전 refs 수집
+        bool isPush = context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase) && 
+                      segments.Length >= 3 && 
+                      segments[2].Equals("git-receive-pack", StringComparison.OrdinalIgnoreCase);
+
+        var beforeRefs = new Dictionary<string, string>();
+        if (isPush && Directory.Exists(physicalRepoPath))
+        {
+            try
+            {
+                using var gitRepo = new LibGit2Sharp.Repository(physicalRepoPath);
+                foreach (var r in gitRepo.Refs)
+                {
+                    if (r.CanonicalName.StartsWith("refs/heads/"))
+                    {
+                        beforeRefs[r.CanonicalName] = r.TargetIdentifier;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to inspect repository references before HTTP push.");
+            }
+        }
 
         var processStartInfo = new ProcessStartInfo
         {
@@ -110,6 +137,37 @@ public class GitSmartHttpMiddleware
         process.StandardInput.Close();
         
         await process.WaitForExitAsync();
+
+        // HTTP Push 완료 후 신규 커밋들에 대해 서명 검증 수행
+        if (isPush && process.ExitCode == 0 && Directory.Exists(physicalRepoPath))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var gitRepo = new LibGit2Sharp.Repository(physicalRepoPath);
+                    foreach (var r in gitRepo.Refs)
+                    {
+                        if (r.CanonicalName.StartsWith("refs/heads/"))
+                        {
+                            string newOid = r.TargetIdentifier;
+                            beforeRefs.TryGetValue(r.CanonicalName, out string? oldOid);
+                            oldOid ??= "0000000000000000000000000000000000000000";
+
+                            if (oldOid != newOid)
+                            {
+                                _logger.LogInformation("HTTP Push detected: ref {Ref} changed from {Old} to {New}. Verifying signatures...", r.CanonicalName, oldOid, newOid);
+                                await sigService.VerifyNewCommitsAsync(physicalRepoPath, oldOid, newOid, repo.Id);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error verifying signatures after HTTP push.");
+                }
+            });
+        }
     }
 
     private async Task ProcessGitOutputAsync(Stream gitStream, HttpContext context)

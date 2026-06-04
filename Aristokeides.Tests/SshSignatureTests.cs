@@ -135,6 +135,135 @@ public class SshSignatureTests : IDisposable
         Assert.ThrowsAny<ArgumentException>(() => SshSignatureParser.ParseSignature(invalidSig));
     }
 
+    [Fact]
+    public void Test_Git_CatFile_Extracts_Correctly()
+    {
+        // 1. 임시 git 저장소 생성
+        using (var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"-C \"{_tempDir}\" init",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }))
+        {
+            process?.WaitForExit();
+        }
+
+        Process.Start(new ProcessStartInfo { FileName = "git", Arguments = $"-C \"{_tempDir}\" config user.name \"Test User\"", CreateNoWindow = true })?.WaitForExit();
+        Process.Start(new ProcessStartInfo { FileName = "git", Arguments = $"-C \"{_tempDir}\" config user.email \"test@example.com\"", CreateNoWindow = true })?.WaitForExit();
+        Process.Start(new ProcessStartInfo { FileName = "git", Arguments = $"-C \"{_tempDir}\" config gpg.format ssh", CreateNoWindow = true })?.WaitForExit();
+        Process.Start(new ProcessStartInfo { FileName = "git", Arguments = $"-C \"{_tempDir}\" config user.signingkey \"{_privateKeyPath}\"", CreateNoWindow = true })?.WaitForExit();
+
+        // 2. 파일 추가 및 첫 커밋 생성
+        File.WriteAllText(Path.Combine(_tempDir, "file.txt"), "Hello");
+        Process.Start(new ProcessStartInfo { FileName = "git", Arguments = $"-C \"{_tempDir}\" add .", CreateNoWindow = true })?.WaitForExit();
+        
+        using (var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"-C \"{_tempDir}\" commit -S -m \"Signed Commit\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }))
+        {
+            process?.WaitForExit();
+        }
+
+        // 커밋 해시 구하기
+        string commitHash;
+        using (var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"-C \"{_tempDir}\" rev-parse HEAD",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }))
+        {
+            commitHash = process?.StandardOutput.ReadToEnd().Trim() ?? "";
+        }
+
+        // Act
+        var (payloadBytes, signature) = ExtractSignatureAndPayload(_tempDir, commitHash);
+
+        // Assert
+        Assert.NotNull(signature);
+        Assert.Contains("-----BEGIN SSH SIGNATURE-----", signature);
+        Assert.Contains("-----END SSH SIGNATURE-----", signature);
+
+        // 검증도 통과하는지 확인
+        bool isVerified = SshSignatureVerifier.Verify(payloadBytes, signature, _publicKeyContent);
+        Assert.True(isVerified);
+    }
+
+    private (byte[] payloadBytes, string? signatureText) ExtractSignatureAndPayload(string repoPath, string commitHash)
+    {
+        using (var process = new Process())
+        {
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"-C \"{repoPath}\" cat-file commit {commitHash}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"Failed to retrieve commit raw data: {process.StandardError.ReadToEnd()}");
+            }
+
+            var lines = output.Split(new[] { "\n" }, StringSplitOptions.None);
+            var signatureSb = new StringBuilder();
+            var payloadLines = new List<string>();
+            bool insideSignature = false;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                string trimmedEndLine = line.EndsWith("\r") ? line.Substring(0, line.Length - 1) : line;
+
+                if (trimmedEndLine.StartsWith("gpgsig "))
+                {
+                    insideSignature = true;
+                    signatureSb.AppendLine(trimmedEndLine.Substring(7));
+                    continue;
+                }
+
+                if (insideSignature)
+                {
+                    if (trimmedEndLine.StartsWith(" "))
+                    {
+                        signatureSb.AppendLine(trimmedEndLine.Substring(1));
+                        continue;
+                    }
+                    else
+                    {
+                        insideSignature = false;
+                    }
+                }
+
+                payloadLines.Add(line);
+            }
+
+            string? signature = signatureSb.Length > 0 ? signatureSb.ToString().Trim() : null;
+            string payloadText = string.Join("\n", payloadLines);
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadText);
+
+            return (payloadBytes, signature);
+        }
+    }
+
     public void Dispose()
     {
         try
