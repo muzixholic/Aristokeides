@@ -10,7 +10,7 @@
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 6 | SSH Key & Connectivity | 3/3 | Completed | 3 success criteria |
-| 7 | SSH Commit Signature | SSH 키 기반 커밋 디지털 서명 서버 검증 및 Verified 배지 표시 | SSH-07 | 2 success criteria |
+| 7 | SSH Commit Signature | 2/2 | Completed | 2 success criteria |
 | 8 | PR Inline Comments | PR Diff 화면에서의 인라인 댓글 작성, 저장 및 대화 스레드화 | CODE-04, CODE-06, CODE-08 | 3 success criteria |
 | 9 | Advanced Review Workflow | 리뷰 상태 추적, 일괄 제출, 미해결 코멘트 병합 차단 및 라인 보정(Line Shift) | CODE-05, CODE-07, CODE-09, CODE-10, CODE-11 | 4 success criteria |
 
@@ -26,14 +26,14 @@
   2. 로컬 터미널에서 `ssh -T git@domain` 명령을 통해 SSH 연결 검증을 테스트할 수 있으며, 성공 시 인증 사용자 이름이 담긴 진단 환영 메시지를 응답받는다.
   3. 사용자가 등록된 SSH 키를 기반으로 로컬 터미널에서 SSH 프로토콜(SSH Clone URL)을 통해 Git Clone, Push, Pull 작업을 안전하게 실행할 수 있다.
 
-### Phase 7: SSH Commit Signature
+### Phase 7: SSH Commit Signature (Completed)
 - **Goal:** SSH 키 기반 커밋 디지털 서명 서버 검증 및 Verified 배지 표시
 - **Mode:** mvp
 - **Requirements:** SSH-07
 - **UI hint**: yes
 - **Success criteria:**
-  1. 사용자가 로컬에서 자신의 SSH 키로 서명하여 푸시한 Git 커밋의 디지털 서명을 서버 측에서 성공적으로 검증한다.
-  2. 검증된 커밋에 대해 웹 UI 커밋 히스토리 및 상세 화면에 신뢰할 수 있는 커밋임을 뜻하는 "Verified" 배지를 시각적으로 표시한다.
+  - [x] 1. 사용자가 로컬에서 자신의 SSH 키로 서명하여 푸시한 Git 커밋의 디지털 서명을 서버 측에서 성공적으로 검증한다.
+  - [x] 2. 검증된 커밋에 대해 웹 UI 커밋 히스토리 및 상세 화면에 신뢰할 수 있는 커밋임을 뜻하는 "Verified" 배지를 시각적으로 표시한다.
 
 ### Phase 8: PR Inline Comments
 - **Goal:** PR Diff 화면에서의 인라인 댓글 작성, 저장 및 대화 스레드화
