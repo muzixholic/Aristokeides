@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 8 context gathered
-last_updated: "2026-06-04T02:11:52.463Z"
+stopped_at: Phase 8 UI-SPEC approved
+last_updated: "2026-06-04T02:21:03.813Z"
 progress:
   total_phases: 4
   completed_phases: 2
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-02)
 
 ## Last Session
 
-**Stopped at:** Phase 8 context gathered
-**Resume file:** .planning/phases/08-pr-inline-comments/08-CONTEXT.md
+**Stopped at:** Phase 8 UI-SPEC approved
+**Resume file:** .planning/phases/08-pr-inline-comments/08-UI-SPEC.md
 
 ## Decisions
 
