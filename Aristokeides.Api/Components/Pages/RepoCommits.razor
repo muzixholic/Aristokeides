@@ -25,6 +25,7 @@ else
                     <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">메시지</th>
                     <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">작성자</th>
                     <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">날짜</th>
+                    <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">서명</th>
                     <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">해시</th>
                 </tr>
             </thead>
@@ -35,6 +36,17 @@ else
                         <td style="padding: 12px;">@commit.Message</td>
                         <td style="padding: 12px;">@commit.Author</td>
                         <td style="padding: 12px;">@commit.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="padding: 12px;">
+                            @if (commit.SignatureStatus == "Verified")
+                            {
+                                <span class="badge-verified" title="이 커밋은 인증된 SSH 키(@commit.SignerUsername)로 서명되었습니다. (지문: @commit.SignatureFingerprint)">
+                                    <svg aria-hidden="true" height="12" viewBox="0 0 12 12" width="12" style="fill: currentColor; margin-right: 4px; vertical-align: middle;">
+                                        <path d="M4.881 1.046a.75.75 0 0 1 .737-.546h.764a.75.75 0 0 1 .737.546l.18.616c.075.257.29.45.553.498l.628.115a.75.75 0 0 1 .581.581l.115.628c.048.263.24.478.498.553l.616.18a.75.75 0 0 1 .546.737v.764a.75.75 0 0 1-.546.737l-.616.18a.755.755 0 0 0-.498.553l-.115.628a.75.75 0 0 1-.581.581l-.628.115a.75.75 0 0 0-.553.498l-.18.616a.75.75 0 0 1-.737.546h-.764a.75.75 0 0 1-.737-.546l-.18-.616a.755.755 0 0 0-.553-.498l-.628-.115a.75.75 0 0 1-.581-.581l-.115-.628a.75.75 0 0 0-.498-.553l-.616-.18a.75.75 0 0 1-.546-.737v-.764a.75.75 0 0 1 .546-.737l.616-.18c.257-.075.45-.29.498-.553l.115-.628a.75.75 0 0 1 .581-.581l.628-.115c.263-.048.478-.24.553-.498l.18-.616ZM6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm1.28 2.28-1.5 1.5a.75.75 0 0 1-1.06 0l-.75-.75a.75.75 0 1 1 1.06-1.06l.22.22.97-.97a.75.75 0 1 1 1.06 1.06Z"></path>
+                                    </svg>
+                                    Verified
+                                </span>
+                            }
+                        </td>
                         <td style="padding: 12px;">
                             <span style="font-family: monospace; color: var(--accent);">@commit.Hash.Substring(0, 7)</span>
                         </td>
@@ -102,7 +114,7 @@ else
 
         try
         {
-            var result = GitService.GetCommits(repoPath, Branch, CurrentPage, PageSize);
+            var result = await GitService.GetCommitsAsync(repoPath, Branch, CurrentPage, PageSize);
             commits = result.Commits;
             hasNextPage = result.HasNextPage;
         }
@@ -116,3 +128,17 @@ else
         }
     }
 }
+
+<style>
+    .badge-verified {
+        display: inline-flex;
+        align-items: center;
+        background-color: #dafbe1;
+        color: #1a7f37;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 20px;
+        border: 1px solid rgba(26, 127, 55, 0.2);
+    }
+</style>

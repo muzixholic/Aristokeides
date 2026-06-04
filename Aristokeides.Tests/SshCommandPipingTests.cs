@@ -125,6 +125,7 @@ public class SshCommandPipingTests : IDisposable
         var services = new ServiceCollection();
         services.AddScoped(sp => new AppDbContext(dbOptions));
         services.AddTransient<SshCommandBridge>();
+        services.AddSingleton<SshSignatureVerificationService>();
         services.AddLogging();
         var serviceProvider = services.BuildServiceProvider();
 

@@ -6,7 +6,16 @@ using Microsoft.EntityFrameworkCore;
 namespace Aristokeides.Api.Services;
 
 public record GitTreeEntry(string Name, string Path, bool IsFolder, string ObjectId);
-public record GitCommitInfo(string Hash, string Message, string Author, DateTimeOffset Date);
+
+public record GitCommitInfo(
+    string Hash, 
+    string Message, 
+    string Author, 
+    DateTimeOffset Date,
+    string? SignatureStatus = null,
+    string? SignatureFingerprint = null,
+    string? SignerUsername = null
+);
 
 public class GitBrowserService
 {
@@ -86,7 +95,7 @@ public class GitBrowserService
         return blob.GetContentText();
     }
 
-    public (List<GitCommitInfo> Commits, bool HasNextPage) GetCommits(string repoPath, string branch, int page, int pageSize)
+    public async Task<(List<GitCommitInfo> Commits, bool HasNextPage)> GetCommitsAsync(string repoPath, string branch, int page, int pageSize)
     {
         using var repo = new Repository(repoPath);
         var branchRef = repo.Branches[branch];
@@ -102,12 +111,28 @@ public class GitBrowserService
         var pagedCommits = allCommits.Skip((page - 1) * pageSize).Take(pageSize + 1).ToList();
 
         var hasNextPage = pagedCommits.Count > pageSize;
-        var commits = pagedCommits.Take(pageSize).Select(c => new GitCommitInfo(
-            c.Sha,
-            c.MessageShort,
-            c.Author.Name,
-            c.Author.When
-        )).ToList();
+        var displayCommits = pagedCommits.Take(pageSize).ToList();
+
+        var hashes = displayCommits.Select(c => c.Sha).ToList();
+
+        var signatures = await _db.CommitSignatures
+            .Include(s => s.SignerUser)
+            .Where(s => hashes.Contains(s.CommitHash))
+            .ToDictionaryAsync(s => s.CommitHash, s => s);
+
+        var commits = displayCommits.Select(c =>
+        {
+            signatures.TryGetValue(c.Sha, out var sig);
+            return new GitCommitInfo(
+                c.Sha,
+                c.MessageShort,
+                c.Author.Name,
+                c.Author.When,
+                sig?.Status,
+                sig?.KeyFingerprint,
+                sig?.SignerUser?.Username
+            );
+        }).ToList();
 
         return (commits, hasNextPage);
     }

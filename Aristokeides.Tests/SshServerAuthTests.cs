@@ -83,6 +83,7 @@ public class SshServerAuthTests
         var services = new ServiceCollection();
         services.AddScoped(sp => new AppDbContext(dbOptions));
         services.AddTransient<SshCommandBridge>();
+        services.AddSingleton<SshSignatureVerificationService>();
         services.AddLogging();
         var serviceProvider = services.BuildServiceProvider();
 
@@ -137,6 +138,7 @@ public class SshServerAuthTests
         var services = new ServiceCollection();
         services.AddScoped(sp => new AppDbContext(dbOptions));
         services.AddTransient<SshCommandBridge>();
+        services.AddSingleton<SshSignatureVerificationService>();
         services.AddLogging();
         var serviceProvider = services.BuildServiceProvider();
 
