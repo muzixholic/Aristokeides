@@ -40,10 +40,15 @@
 - **Mode:** mvp
 - **Requirements:** CODE-04, CODE-06, CODE-08
 - **UI hint**: yes
+- **Plans:** 2 plans
 - **Success criteria:**
   1. Pull Request의 파일 변경 Diff 화면에서 특정 코드 행에 마우스를 올릴 때 `+` 버튼이 노출되며, 클릭 시 해당 줄 바로 아래에 마크다운 및 실시간 프리뷰가 지원되는 인라인 댓글 작성 창이 열린다.
   2. 작성된 인라인 댓글은 해당 코드 주변 컨텍스트(DiffHunk), 원본/대상 파일 경로 및 라인 번호와 함께 DB에 정확하게 연동 및 저장되며, 새로고침 없이 즉시 화면에 렌더링된다.
   3. 인라인 댓글에 스레드 형식으로 답글(Reply)을 달 수 있으며, 해결된 토론은 "Resolve conversation"을 통해 접기 처리하고 필요 시 다시 재개할 수 있다.
+
+Plans:
+- [ ] 08-01-PLAN.md — PR 인라인 댓글 단일 쓰기/조회 백엔드 핵심 비즈니스 로직 및 기본 UI 슬라이스
+- [ ] 08-02-PLAN.md — 마크다운 프리뷰, 대댓글 스레드 및 대화 해결/재개 UI 통합 슬라이스
 
 ### Phase 9: Advanced Review Workflow
 - **Goal:** 리뷰 상태 추적, 일괄 제출, 미해결 코멘트 병합 차단 및 라인 보정(Line Shift)
