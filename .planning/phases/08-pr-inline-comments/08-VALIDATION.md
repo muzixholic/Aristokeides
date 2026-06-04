@@ -38,10 +38,10 @@ created: 2026-06-04
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 08-01-01 | 01 | 0 | CODE-04 / CODE-08 | — | — | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
-| 08-01-02 | 01 | 0 | CODE-06 | T-08-01 | — | integration | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
-| 08-02-01 | 02 | 1 | CODE-04 | T-08-02 | 마크다운 프리뷰 시 악성 HTML이 차단되어 출력됨 | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
-| 08-02-02 | 02 | 1 | CODE-04 / CODE-08 | T-08-03 | 리포지토리 조회 권한이 있는 사용자만 댓글 조회 및 편집 가능 | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
+| 08-01-01 | 01 | 1 | CODE-04 / CODE-08 | — | — | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
+| 08-01-02 | 01 | 1 | CODE-06 | T-08-01 | — | integration | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
+| 08-02-01 | 02 | 2 | CODE-04 | T-08-02 | 마크다운 프리뷰 시 악성 HTML이 차단되어 출력됨 | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
+| 08-02-02 | 02 | 2 | CODE-04 / CODE-08 | T-08-03 | 리포지토리 조회 권한이 있는 사용자만 댓글 조회 및 편집 가능 | unit | `dotnet test --filter "FullyQualifiedName~InlineComment"` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
