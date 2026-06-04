@@ -23,6 +23,14 @@ created: 2026-06-04
 | Icon library | SVG inline icons |
 | Font | system-ui, -apple-system, sans-serif |
 
+### Visual Hierarchy & Focal Point
+
+- **Focal Point (초점):** 코드 라인 옆에 표시되는 호버 상태의 `+` 버튼과 현재 작성 중인 active 상태의 댓글 입력창이 화면의 중심 초점입니다.
+- **Visual Hierarchy (시각적 계층 구조):**
+  1. **1순위 (가장 높은 시각적 강도):** active 상태의 댓글 입력창 및 주요 CTA 버튼 ("Add single comment")
+  2. **2순위 (중간 시각적 강도):** 등록된 댓글 카드의 내용 및 스레드 대화 영역
+  3. **3순위 (가장 낮은 시각적 강도):** 작성자 이름, 작성 시간, 라인 번호 등 메타데이터와 보조 액션 버튼 ("Cancel editing", "Discard comment", "Resolve")
+
 ---
 
 ## Spacing Scale
@@ -41,7 +49,8 @@ created: 2026-06-04
 
 예외 사항:
 - `+` 버튼의 크기: `20px` x `20px` (정사각형 터겟 확보 및 코드 라인 높이 정렬을 위함)
-- 변경 내역 테이블 라인 번호 열 너비: `50px` (고정)
+  - *접근성(Accessibility) 요구사항*: 아이콘 단독으로 동작하는 `+` 버튼은 스크린 리더 지원을 위해 `aria-label="Add comment"` 대체 텍스트를 필수적으로 정의해야 합니다.
+- 변경 내역 테이블 라인 번호 열 너비: `48px` (고정, 4의 배수 규격 준수)
 
 ---
 
@@ -50,9 +59,11 @@ created: 2026-06-04
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (Regular) | 1.5 |
-| Label | 12px | 500 (Medium) / 600 (Semibold) | 1.2 |
+| Label | 12px | 600 (Semibold) | 1.2 |
 | Heading | 20px | 600 (Semibold) | 1.2 |
 | Monospace / Code | 12px | 400 (Regular) | 1.5 |
+
+*주: 폰트 웨이트는 일관성을 위해 `400 (Regular)`과 `600 (Semibold)`의 2가지로 제한합니다.*
 
 ---
 
@@ -87,7 +98,7 @@ Accent reserved for:
 | Empty state body | "Hover over a line of code to start a discussion." |
 | Error state | "Failed to save comment. Please check your connection and try again." |
 | Destructive confirmation | "Delete comment": "Are you sure you want to delete this comment? This action cannot be undone." |
-| Action labels | "Cancel" (취소), "Resolve conversation" (해결됨 표시), "Unresolve conversation" (해결 안 됨으로 변경) |
+| Action labels | "Cancel editing" (편집 취소), "Discard comment" (댓글 작성 취소), "Resolve conversation" (해결됨 표시), "Unresolve conversation" (해결 안 됨으로 변경) |
 
 ---
 
