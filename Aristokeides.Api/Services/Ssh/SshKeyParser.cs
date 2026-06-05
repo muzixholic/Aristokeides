@@ -14,10 +14,12 @@ public static class SshKeyParser
         if (string.IsNullOrWhiteSpace(publicKeyContent))
             throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다.");
 
-        // 스페이스로 잘라서 [알고리즘, base64 페이로드, 주석(선택)]으로 분리
-        string[] parts = publicKeyContent.Trim().Split(' ', 3);
+        // 줄바꿈 제거 및 연속된 공백 무시
+        publicKeyContent = publicKeyContent.Trim().Replace("\r", "").Replace("\n", "");
+        string[] parts = publicKeyContent.Split(new char[] { ' ' }, 3, StringSplitOptions.RemoveEmptyEntries);
+        
         if (parts.Length < 2)
-            throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다.");
+            throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다. (부분 분리 실패)");
 
         string algorithm = parts[0];
         byte[] keyBytes;

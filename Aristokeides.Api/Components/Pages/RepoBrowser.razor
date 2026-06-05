@@ -3,6 +3,7 @@
 @page "/{username}/{repoName}/tree/{branch}/{*path}"
 @using Microsoft.JSInterop
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
 @inject Aristokeides.Api.Services.GitBrowserService GitService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
 @inject NavigationManager NavManager

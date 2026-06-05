@@ -142,6 +142,14 @@ public class SshServerBackgroundService : BackgroundService
             return;
         }
 
+        if (e.Key == null)
+        {
+            LastAuthFailureReason = "Public key is required for authentication.";
+            _logger.LogWarning("UserAuth failed: No public key provided for user '{Username}'", e.Username);
+            e.Result = false;
+            return;
+        }
+
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 

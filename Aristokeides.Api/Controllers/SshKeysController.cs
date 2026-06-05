@@ -64,11 +64,11 @@ public class SshKeysController : ControllerBase
         }
         catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is InvalidOperationException)
         {
-            return BadRequest(new { message = "Invalid key format. Only Ed25519, ECDSA, and RSA (3072 bits or higher) keys are supported." });
+            return BadRequest(new { message = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, new { message = "An error occurred while adding the key. Please try again." });
+            return StatusCode(500, new { message = $"An error occurred while adding the key. Please try again. ({ex.Message})" });
         }
 
         // 라벨이 없거나 비어있는 경우, 파싱된 코멘트 사용 혹은 기본 라벨 사용
@@ -81,9 +81,9 @@ public class SshKeysController : ControllerBase
         {
             fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(request.PublicKey);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return BadRequest(new { message = "Invalid key format. Only Ed25519, ECDSA, and RSA (3072 bits or higher) keys are supported." });
+            return BadRequest(new { message = $"지문 계산 실패: {ex.Message}" });
         }
 
         // 3. 전역 중복 체크

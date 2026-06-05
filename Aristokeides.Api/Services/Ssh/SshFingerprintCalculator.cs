@@ -13,9 +13,11 @@ public static class SshFingerprintCalculator
         if (string.IsNullOrWhiteSpace(publicKeyContent))
             throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다.");
 
-        string[] parts = publicKeyContent.Trim().Split(' ');
+        publicKeyContent = publicKeyContent.Trim().Replace("\r", "").Replace("\n", "");
+        string[] parts = publicKeyContent.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        
         if (parts.Length < 2)
-            throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다.");
+            throw new ArgumentException("유효하지 않은 SSH 공개키 포맷입니다. (부분 분리 실패)");
 
         string base64Payload = parts[1];
         byte[] keyBytes;
