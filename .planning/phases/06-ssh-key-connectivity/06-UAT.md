@@ -1,130 +1,107 @@
 ﻿---
-status: diagnosed
+status: partial
 phase: 06-ssh-key-connectivity
-source: 06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md
-started: 2026-06-05T01:23:00Z
-updated: 2026-06-05T01:23:00Z
+source: 06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md, 06-SUMMARY.md
+started: 2026-06-05T12:38:22Z
+updated: 2026-06-05T13:18:10Z
 ---
 
 ## Current Test
-<!-- OVERWRITE each test - shows where we are -->
 
-[testing paused — 2 items outstanding]
+[testing complete]
 
 ## Tests
 
-### 1. SSH 키 설정 페이지 접근
-expected: 설정(Settings) 화면에 접속했을 때 "General Settings"와 "SSH Keys" 탭이 표시된다. "SSH Keys" 탭을 클릭하면 SSH 공개키를 등록할 수 있는 입력 폼이 나타난다.
+### 1. Cold Start Smoke Test
+expected: Kill any running server/service. Clear ephemeral state. Start the application from scratch. Server boots without errors, SSH server binds to port 2222 successfully, and a basic API call/page load returns live data.
 result: pass
 
-### 2. SSH 공개키 등록 (Ed25519/ECDSA/RSA)
-expected: SSH Keys 탭의 입력 폼에 유효한 공개키(Ed25519, ECDSA, RSA 3072비트 이상)를 붙여넣으면 키 주석이 라벨로 자동 파싱되어 채워지고, 등록 버튼을 클릭하면 목록에 해당 키가 SHA-256 지문(Fingerprint)과 함께 나타난다.
+### 2. SSH 키 등록 UI
+expected: 설정(Settings) 화면에서 좌측 "General Settings"의 "SSH Keys" 탭이 표시된다. "SSH Keys" 탭을 클릭하면 SSH 공개키를 입력할 수 있는 입력 폼이 보인다.
 result: pass
 
-### 3. 보안 강도 미달 키 차단
-expected: RSA 2048비트 이하의 약한 키 또는 지원하지 않는 알고리즘의 키를 등록하려 하면 에러 배너/메시지가 표시되고 등록이 거부된다.
+### 3. SSH 키 포맷 검증 (Ed25519/ECDSA/RSA)
+expected: SSH Keys 폼에 유효한 공개키(Ed25519, ECDSA, RSA 3072비트 이상)를 넣고 키 설명을 빈칸으로 둔 채 추가 버튼을 클릭하면, 성공적으로 추가되며 해당 키의 SHA-256 지문(Fingerprint)이 함께 보인다.
 result: pass
 
-### 4. 중복 키 등록 차단
-expected: 이미 등록된 것과 동일한 공개키를 다시 등록하려 하면 409 Conflict 등의 오류 메시지가 표시되고 중복 등록이 차단된다.
+### 4. 보안 기준 미달 Ű 차단
+expected: RSA 2048비트 등 보안 기준에 미달하는 키를 등록하려고 하면, 에러 메시지가 표시되고 등록이 차단된다.
+result: pass
+
+### 5. 중복 Ű 등록 차단
+expected: 이미 등록된 동일한 공개키를 다시 등록하려고 하면, 409 Conflict 기반의 에러 메시지가 표시되고 중복 등록이 차단된다. (RSA 4096 등 긴 키도 정상 검증되어야 함)
+result: pass
+
+### 6. SSH Ű 삭제
+expected: 등록된 SSH Ű 목록에서 휴지통 버튼을 클릭하면 확인(Confirm) 모달이 표시되고, 확인 시 해당 Ű가 목록에서 삭제된다.
+result: pass
+
+### 7. 저장소 SSH Clone URL 표시
+expected: 저장소(Repository) 뷰 화면에서 [HTTP]와 [SSH] 토글 버튼이 보이고, [SSH] 버튼을 클릭하면 SSH Clone URL이 표시되며, 복사 버튼 작동 시 클립보드에 정상적으로 복사된다.
+result: pass
+
+### 8. ssh -T 진단 연결
+expected: 등록된 SSH Ű가 있는 클라이언트의 터미널에서 \ssh -T git@localhost -p 2222\ 를 실행하면 셸 접근이 없다는 환영 메시지("Hi [username]! You've successfully authenticated...")를 출력하고 정상 종료된다.
 result: issue
-reported: "rsa 4096으로 생성한 키를 넣어도 포멧이 안맞는다는 에러메시지가 나옴"
-severity: major
-
-### 5. SSH 키 삭제
-expected: 등록된 SSH 키 목록에서 삭제 버튼을 클릭하면 확인(Confirm) 모달이 표시되고, 확인을 누르면 해당 키가 목록에서 즉시 제거된다.
-result: pass
-
-### 6. 저장소 SSH Clone URL 표시
-expected: 저장소(Repository) 메인 화면에서 [HTTP]와 [SSH] 프로토콜 토글 위젯이 보이고, [SSH] 를 선택하면 SSH Clone URL(예: git@도메인:사용자명/저장소명.git)이 표시된다. 📋 복사 버튼을 누르면 클립보드에 복사되고 2초간 툴팁이 노출된다.
-result: issue
-reported: "SSH 토글 위젯은 있지만 클릭해도 아무런 변화가 없음. HTTP 상태에서 복사 버튼을 눌러도 아무런 반응 없음."
-severity: major
-
-### 7. ssh -T 진단 연결 (서버 구동 확인)
-expected: 로컬 터미널에서 ssh -T git@localhost (또는 설정된 도메인/포트)를 실행하면 인증된 사용자 이름이 담긴 웰컴 메시지를 수신하고 정상 종료된다.
-result: issue
-reported: "접속시 패스워드 입력창이 나오고 아무 값이나 입력했을 시 OnUserAuth에서 e.Key가 null이라 System.ArgumentNullException: 'Value cannot be null. (Parameter 'source')' 에러가 발생함"
+reported: "여전히 패스워드 입력을 요구하고 어떤 값이던 입력하면 Permission denied 메시지가 발생함"
 severity: blocker
 
-### 8. SSH Git Clone
-expected: 등록된 SSH 키를 사용하여 로컬 터미널에서 SSH Clone URL로 git clone 명령을 실행하면 저장소가 성공적으로 복제된다.
-result: blocked
-blocked_by: server
-reason: "blocked"
-
-### 9. SSH Git Push
-expected: SSH로 클론한 저장소에서 변경 사항을 만들고 git push를 실행하면 변경 사항이 서버에 성공적으로 푸시된다.
-result: blocked
-blocked_by: server
-reason: "blocked"
-
-### 10. 비인가 SSH 셸 접근 차단
-expected: SSH로 연결 후 git 명령 외의 일반 셸 명령(예: ssh git@localhost ls)을 실행하면 "Interactive shell is not allowed" 메시지와 함께 접속이 차단/종료된다.
+### 9. SSH Git Clone
+expected: 등록된 SSH Ű를 이용하여 터미널에서 SSH Clone URL로 \git clone\을 실행하면 비밀번호 입력 없이(또는 SSH Key passphrase만으로) 성공적으로 복제된다.
 result: issue
-reported: "ssh: connect to host localhost port 22: Connection refused"
-severity: major
+reported: "방금과 동일하게 패스워드 입력을 요구하고 어떤 값이던 입력하면 Access Denined가 발생함"
+severity: blocker
+
+### 10. SSH Git Push
+expected: SSH로 클론한 저장소에 새 커밋을 만들고 \git push\를 실행하면 비밀번호 입력 없이 성공적으로 푸시된다.
+result: skipped
+reason: "검증불가"
+
+### 11. 비인가 SSH 셸 접근 차단
+expected: SSH를 통해 git 명령이 아닌 일반 셸 명령(예: \ssh git@localhost -p 2222 ls\)을 시도하면 "Interactive shell is not allowed" 메시지가 출력되고 연결이 종료된다.
+result: issue
+reported: "동일한 문제 발생"
+severity: blocker
 
 ## Summary
 
-total: 10
-passed: 4
-issues: 4
+total: 11
+passed: 7
+issues: 3
 pending: 0
-skipped: 0
-blocked: 2
+skipped: 1
 
 ## Gaps
 
-- truth: "SSH로 연결 후 git 명령 외의 일반 셸 명령(예: \ssh git@localhost ls\)을 실행하면 Interactive shell is not allowed 메시지와 함께 접속이 차단/종료된다."
-  status: failed
-  reason: "User reported: ssh: connect to host localhost port 22: Connection refused"
-  severity: major
-  test: 10
-  root_cause: "테스트 시 접속 포트가 명시되지 않아 22번 포트로 연결을 시도했으나, 서버는 2222번 포트에서 수신 대기 중임"
-  artifacts:
-    - path: "Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs"
-      issue: "기본 포트 2222로 설정되어 있음 (정상 동작)"
-  missing:
-    - "테스트 스크립트/명령어에 -p 2222 플래그 추가"
-  debug_session: ".planning/debug/ssh-connection-refused.md"
 
-- truth: "로컬 터미널에서 \ssh -T git@localhost\ (또는 설정된 도메인/포트)를 실행하면 인증된 사용자 이름이 담긴 웰컴 메시지를 수신하고 정상 종료된다."
+
+
+
+
+
+
+- truth: "등록된 SSH Ű가 있는 클라이언트의 터미널에서 \ssh -T git@localhost -p 2222\ 를 실행하면 셸 접근이 없다는 환영 메시지("Hi [username]! You've successfully authenticated...")를 출력하고 정상 종료된다."
   status: failed
-  reason: "User reported: 접속시 패스워드 입력창이 나오고 아무 값이나 입력했을 시 OnUserAuth에서 e.Key가 null이라 System.ArgumentNullException: 'Value cannot be null. (Parameter 'source')' 에러가 발생함"
+  reason: "User reported: 여전히 패스워드 입력을 요구하고 어떤 값이던 입력하면 Permission denied 메시지가 발생함"
   severity: blocker
-  test: 7
-  root_cause: "OnUserAuth에서 패스워드 인증 등 PublicKey가 아닌 인증 시도 시 e.Key가 null인데 이를 처리하지 않고 SHA256.HashData(e.Key)를 호출함"
-  artifacts:
-    - path: "Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs"
-      issue: "Missing null check for e.Key in OnUserAuth"
-  missing:
-    - "Add if (e.Key == null) check in OnUserAuth to reject non-PublicKey authentication"
-  debug_session: ".planning/debug/ssh-auth-argument-null.md"
+  test: 8
+  artifacts: []
+  missing: []
 
-- truth: "저장소(Repository) 메인 화면에서 [HTTP]와 [SSH] 프로토콜 토글 위젯이 보이고, [SSH] 를 선택하면 SSH Clone URL이 표시되며, 복사 버튼 작동 시 클립보드에 복사되고 툴팁이 노출된다."
+- truth: "등록된 SSH Ű를 이용하여 터미널에서 SSH Clone URL로 \git clone\을 실행하면 비밀번호 입력 없이(또는 SSH Key passphrase만으로) 성공적으로 복제된다."
   status: failed
-  reason: "User reported: SSH 토글 위젯은 있지만 클릭해도 아무런 변화가 없음. HTTP 상태에서 복사 버튼을 눌러도 아무런 반응 없음."
-  severity: major
-  test: 6
-  root_cause: "RepoBrowser.razor 컴포넌트에 InteractiveServer 렌더 모드 지정이 누락되어 정적 렌더링(SSR) 모드로 동작함"
-  artifacts:
-    - path: "Aristokeides.Api/Components/Pages/RepoBrowser.razor"
-      issue: "Missing @rendermode directive for interactivity"
-  missing:
-    - "Add @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer to RepoBrowser.razor"
-  debug_session: ".planning/debug/ssh-toggle-js-broken.md"
+  reason: "User reported: 방금과 동일하게 패스워드 입력을 요구하고 어떤 값이던 입력하면 Access Denined가 발생함"
+  severity: blocker
+  test: 9
+  artifacts: []
+  missing: []
 
-- truth: "이미 등록된 것과 동일한 공개키를 다시 등록하려 하면 409 Conflict 등의 오류 메시지가 표시되고 중복 등록이 차단된다."
+
+- truth: "SSH를 통해 git 명령이 아닌 일반 셸 명령(예: \ssh git@localhost -p 2222 ls\)을 시도하면 "Interactive shell is not allowed" 메시지가 출력되고 연결이 종료된다."
   status: failed
-  reason: "User reported: rsa 4096으로 생성한 키를 넣어도 포멧이 안맞는다는 에러메시지가 나옴"
-  severity: major
-  test: 4
-  root_cause: "SshKeysController가 모든 파싱 에러(포맷 오류, 알고리즘 지원 불가, 약한 키 등)를 뭉뚱그려 'Invalid key format' 에러로 반환하여 실제 에러(복사 중 발생한 서식 깨짐 등) 원인을 사용자에게 숨김"
-  artifacts:
-    - path: "Aristokeides.Api/Controllers/SshKeysController.cs"
-      issue: "Exception masking hides specific error messages from SshKeyParser"
-  missing:
-    - "Modify SshKeysController to return ex.Message so users can see exact validation errors"
-  debug_session: ".planning/debug/rsa-4096-parsing-error.md"
+  reason: "User reported: 동일한 문제 발생"
+  severity: blocker
+  test: 11
+  artifacts: []
+  missing: []
 
