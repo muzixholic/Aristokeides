@@ -16,3 +16,7 @@ We implemented fixes for the four gaps identified during Phase 06 UAT:
 - Modifies \Aristokeides.Api/Services/Ssh/SshKeyParser.cs\ and \Aristokeides.Api/Services/Ssh/SshFingerprintCalculator.cs\ to aggressively trim and split public key strings.
 - Modifies \Aristokeides.Api/Controllers/SshKeysController.cs\ to bubble up \ex.Message\ directly to the frontend response for Bad Requests.
 
+
+## Gap Closure 2
+- Added clear UI instructions to Settings.razor indicating how to use custom SSH keys via ~/.ssh/config or the -i flag to avoid misleading password prompts.
+- Added GIT_SSH_COMMAND instructions to RepoBrowser.razor for both empty and non-empty repositories.

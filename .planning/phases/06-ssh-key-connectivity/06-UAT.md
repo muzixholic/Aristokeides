@@ -86,6 +86,7 @@ skipped: 1
   severity: blocker
   test: 8
   artifacts: []
+  root_cause: "사용자의 SSH 클라이언트가 등록된 키를 자동으로 제공하지 않을 경우, FxSsh 서버는 인증 실패 후 패스워드 인증을 허용한다고 클라이언트에게 알립니다. 우리 서버 코드는 패스워드 인증을 차단하지만, 클라이언트 측에서는 계속 패스워드 프롬프트를 띄우게 됩니다. 이를 방지하려면 클라이언트에서 -i 옵션으로 명시적 키를 지정해야 함을 안내하거나, SSH 설정(ssh_config) 안내를 제공해야 합니다."
   missing: []
 
 - truth: "등록된 SSH Ű를 이용하여 터미널에서 SSH Clone URL로 \git clone\을 실행하면 비밀번호 입력 없이(또는 SSH Key passphrase만으로) 성공적으로 복제된다."
@@ -94,6 +95,7 @@ skipped: 1
   severity: blocker
   test: 9
   artifacts: []
+  root_cause: "Test 8과 동일한 원인으로, git clone 시에도 클라이언트가 올바른 SSH 키를 제공하지 않아 패스워드 프롬프트가 발생하고 인증이 거부되었습니다."
   missing: []
 
 
@@ -103,5 +105,7 @@ skipped: 1
   severity: blocker
   test: 11
   artifacts: []
+  root_cause: "Test 8과 동일하게 셸 접근 테스트에서도 SSH 인증 자체가 통과하지 못해 발생하는 현상입니다."
   missing: []
+
 
