@@ -7,6 +7,7 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 ## 🚀 주요 기능
 
 ### 1. 사용자 인증 및 권한 관리 (Auth)
+- **웹 기반 인증 시스템**: 웹 브라우저를 통해 직관적으로 회원가입, 로그인, 로그아웃을 수행할 수 있는 전용 UI를 제공합니다.
 - **하이브리드 인증**: API 통신을 위한 JWT Bearer 토큰 인증과 웹 브라우저 접속을 위한 Cookie 인증 방식을 통합 제공합니다.
 - **Git Basic Auth**: Git CLI 클라이언트의 HTTP `clone`, `push`, `pull` 요청 시 Basic Authentication을 지원합니다.
 - **역할 기반 권한**: `Admin`, `Contributor`, `Reader` 등 3가지의 명확한 역할(Role) 구분을 지원합니다.
@@ -40,6 +41,12 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 - **라인 번호 자동 보정 (Line Shift)**: 소스 브랜치에 신규 커밋이 푸시될 때 기존 댓글의 줄 위치를 Myers/Hunk 매핑에 기반해 자동으로 올바르게 밀어주고(Line Shift), 코드가 수정/삭제되어 유실된 경우에는 해당 스레드를 `Outdated` 상태로 자동 전환 및 아코디언 접기 렌더링합니다.
 - **병합 차단 및 관리자 우회**: PR에 해결되지 않은(Unresolved) 토론이 1개라도 존재하는 경우 일반 사용자의 병합(Merge)을 엄격히 차단하되, 관리자(Admin) 권한을 가진 사용자에게만 우회 강제 병합(Force Merge) 옵션을 체크박스를 통해 제공합니다.
 - **승인 자동 리셋**: 소스 브랜치에 새 커밋이 푸시되면 기존 리뷰어들의 승인(`Approved`) 상태를 시스템에서 자동으로 취소(`Dismissed` 전환)하여 소스 변경에 따른 전면 재검토를 유도합니다.
+
+### 7. 대시보드 및 웹 UI 저장소 관리 (Web Dashboard & Repo Management)
+- **랜딩 페이지 및 대시보드**: 비로그인 시 프로젝트를 소개하는 랜딩 페이지를 제공하며, 로그인 시 자신이 접근 가능한 리포지토리 목록을 카드 뷰 형태로 보여주는 대시보드로 자동 연결됩니다.
+- **웹 기반 저장소 생성/관리**: 웹 브라우저 인터페이스를 통해 직관적으로 새로운 Git 저장소를 생성할 수 있습니다.
+- **설정 및 안전한 삭제**: 기존 저장소의 이름, 설명, 비공개 여부 등을 웹에서 즉시 수정할 수 있으며, 이중 확인 모달을 통해 물리적인 Git 저장소와 데이터베이스를 일괄적으로 안전하게 영구 삭제할 수 있습니다.
+- **통합 네비게이션**: 글로벌 네비게이션 바와 푸터를 통해 시스템 내 어느 페이지에서든 주요 기능으로 쉽게 이동할 수 있는 일관된 UI/UX를 제공합니다.
 
 ---
 
@@ -78,7 +85,9 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
   - [SshKeysController.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Controllers/SshKeysController.cs): SSH 키 목록 조회, 등록, 삭제를 제공하는 API 컨트롤러
 - **사용자 인터페이스 (Blazor Components)**:
   - [Components/Pages/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages): 전체 화면 뷰 컴포넌트들
-    - [Settings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Settings.razor) : 프로필 정보 및 SSH 키 등록/삭제를 지원하는 설정 화면
+    - [Home.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Home.razor) & [Dashboard.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Dashboard.razor) : 비로그인/로그인 세션 기반의 랜딩 페이지 및 저장소 목록 뷰
+    - [NewRepository.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/NewRepository.razor) & [RepositorySettings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepositorySettings.razor) : 웹 UI 기반의 신규 저장소 생성 및 설정 변경/삭제 페이지
+    - [Settings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Settings.razor) : 프로필 정보 및 SSH 키 등록/삭제를 지원하는 사용자 설정 화면
     - [RepoBrowser.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoBrowser.razor) : HTTP/SSH 클론 URL 선택 및 파일 목록 표시
     - [RepoPullRequestDetail.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoPullRequestDetail.razor) : PR 코드 디프, 임시 댓글 작성 및 일괄 제출 UI, 머지 제어 및 관리자 우회 동의 UI
     - `RepoBlob.razor` (구문 강조 코드 뷰어), `RepoIssues.razor` (칸반 보드)
