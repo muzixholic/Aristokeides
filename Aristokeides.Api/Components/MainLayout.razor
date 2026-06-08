@@ -6,12 +6,13 @@
         <div>
             <AuthorizeView>
                 <Authorized>
-                    <span>Hello, @context.User.Identity?.Name!</span>
-                    <a href="/settings" style="margin-left: 16px;">Settings</a>
-                    <a href="/logout" style="margin-left: 16px;">Logout</a>
+                    <span>@context.User.Identity?.Name 님</span>
+                    <a href="/settings" style="margin-left: 16px;">설정</a>
+                    <a href="/api/auth/logout" style="margin-left: 16px;">로그아웃</a>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login">Login</a>
+                    <a href="/login">로그인</a>
+                    <a href="/register" style="margin-left: 16px;">회원가입</a>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
