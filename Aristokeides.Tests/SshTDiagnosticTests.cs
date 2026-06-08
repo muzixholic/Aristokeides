@@ -67,7 +67,7 @@ public class SshTDiagnosticTests
     [Fact]
     public async Task SshT_WelcomeMessage_ShouldBeReturnedAndCloseSafely()
     {
-        int testPort = 2223; // 테스트 포트 사용
+        int testPort = 2224; // 테스트 포트 변경
         var (publicKey, privateKeyBytes) = GenerateEcdsaKeyPair();
         string fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(publicKey);
 

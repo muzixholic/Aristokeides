@@ -17,13 +17,13 @@ Does not require prior new-project setup — auto-creates `.planning/sketches/` 
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/sketch.md
-@~/.gemini/antigravity/get-shit-done/workflows/sketch-wrap-up.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
-@~/.gemini/antigravity/get-shit-done/references/sketch-theme-system.md
-@~/.gemini/antigravity/get-shit-done/references/sketch-interactivity.md
-@~/.gemini/antigravity/get-shit-done/references/sketch-tooling.md
-@~/.gemini/antigravity/get-shit-done/references/sketch-variant-patterns.md
+@~/.gemini/antigravity/gsd-core/workflows/sketch.md
+@~/.gemini/antigravity/gsd-core/workflows/sketch-wrap-up.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/references/sketch-theme-system.md
+@~/.gemini/antigravity/gsd-core/references/sketch-interactivity.md
+@~/.gemini/antigravity/gsd-core/references/sketch-tooling.md
+@~/.gemini/antigravity/gsd-core/references/sketch-variant-patterns.md
 </execution_context>
 
 <runtime_note>

@@ -13,7 +13,7 @@ planning via /gsd-plan-phase --reviews.
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/review.md
+@~/.gemini/antigravity/gsd-core/workflows/review.md
 </execution_context>
 
 <context>
@@ -26,6 +26,7 @@ Phase number: extracted from $ARGUMENTS (required)
 - `--opencode` — Include OpenCode review (uses model from user's OpenCode config)
 - `--qwen` — Include Qwen Code review (Alibaba Qwen models)
 - `--cursor` — Include Cursor agent review
+- `--agy` / `--antigravity` — Include Antigravity CLI review
 - `--all` — Include all available CLIs
 </context>
 

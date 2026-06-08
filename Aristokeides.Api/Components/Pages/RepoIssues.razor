@@ -6,6 +6,7 @@
 @inject IssueService IssueService
 @inject AppDbContext DbContext
 @inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
 
 <PageTitle>@Username/@RepoName - Issues</PageTitle>
@@ -15,6 +16,10 @@
     <div style="margin-top: 16px; display: flex; gap: 16px;">
         <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
         <a href="/@Username/@RepoName/issues" style="color: #2563eb; text-decoration: none; font-weight: 500;">Issues</a>
+        @if (isOwner)
+        {
+            <a href="/@Username/@RepoName/settings" style="color: #4b5563; text-decoration: none;">Settings</a>
+        }
     </div>
 </div>
 
@@ -88,6 +93,7 @@
     private List<BoardColumn> columns = new();
     private List<Issue> issues = new();
     private bool isLoading = true;
+    private bool isOwner = false;
     private string? errorMessage;
 
     private Issue? draggingIssue;
@@ -98,12 +104,25 @@
         errorMessage = null;
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = 0;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null)
+                {
+                    userId = int.Parse(userIdClaim.Value);
+                }
+            }
+
             repository = await DbContext.Repositories
                 .Include(r => r.Owner)
                 .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
 
             if (repository != null)
             {
+                isOwner = repository.OwnerId == userId;
                 columns = await IssueService.GetBoardColumnsAsync(repository.Id);
                 issues = await IssueService.GetIssuesAsync(repository.Id);
             }

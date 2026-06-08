@@ -12,10 +12,10 @@ Import external plan files into the GSD planning system with conflict detection 
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/import.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
-@~/.gemini/antigravity/get-shit-done/references/gate-prompts.md
-@~/.gemini/antigravity/get-shit-done/references/doc-conflict-engine.md
+@~/.gemini/antigravity/gsd-core/workflows/import.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/references/gate-prompts.md
+@~/.gemini/antigravity/gsd-core/references/doc-conflict-engine.md
 </execution_context>
 
 <context>
@@ -24,7 +24,7 @@ $ARGUMENTS
 
 <process>
 If `--from-gsd2` is in $ARGUMENTS:
-Run: `node "$HOME/.gemini/antigravity/get-shit-done/bin/gsd-tools.cjs" from-gsd2`
+Run: `node "$HOME/.gemini/antigravity/gsd-core/bin/gsd-tools.cjs" from-gsd2`
 Pass `--path <dir>` if provided. Present the migration result to the user.
 Stop here (do not run the standard import workflow).
 

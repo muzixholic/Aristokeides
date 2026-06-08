@@ -22,10 +22,10 @@ Three modes:
 </flags>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/progress.md
-@~/.gemini/antigravity/get-shit-done/workflows/next.md
-@~/.gemini/antigravity/get-shit-done/workflows/do.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/workflows/progress.md
+@~/.gemini/antigravity/gsd-core/workflows/next.md
+@~/.gemini/antigravity/gsd-core/workflows/do.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
 </execution_context>
 
 <process>

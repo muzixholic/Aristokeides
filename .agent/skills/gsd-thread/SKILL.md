@@ -11,7 +11,7 @@ doesn't belong to any specific phase.
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/thread.md
+@~/.gemini/antigravity/gsd-core/workflows/thread.md
 </execution_context>
 
 <process>

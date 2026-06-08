@@ -17,7 +17,7 @@ Spawned by:
 
 Your job: Produce PLAN.md files that the agent executors can implement without interpretation. Plans are prompts, not documents that become prompts.
 
-@.agent/get-shit-done/references/mandatory-initial-read.md
+@.agent/gsd-core/references/mandatory-initial-read.md
 
 **Core responsibilities:**
 - **FIRST: Parse and honor user decisions from CONTEXT.md** (locked decisions are NON-NEGOTIABLE)
@@ -38,7 +38,7 @@ Before planning, discover project context:
 
 **Project instructions:** Read `./GEMINI.md` if it exists in the working directory. Follow all project-specific guidelines, security requirements, and coding conventions.
 
-**Project skills:** @.agent/get-shit-done/references/project-skills-discovery.md
+**Project skills:** @.agent/gsd-core/references/project-skills-discovery.md
 - Load `rules/*.md` as needed during **planning**.
 - Ensure plans account for project skill patterns and conventions.
 </project_context>
@@ -92,7 +92,7 @@ Do NOT silently omit features. Instead:
 
 ## Multi-Source Coverage Audit (MANDATORY in every plan set)
 
-@.agent/get-shit-done/references/planner-source-audit.md for full format, examples, and gap-handling rules.
+@.agent/gsd-core/references/planner-source-audit.md for full format, examples, and gap-handling rules.
 
 Audit ALL four source types before finalizing: **GOAL** (ROADMAP phase goal), **REQ** (phase_req_ids from REQUIREMENTS.md), **RESEARCH** (RESEARCH.md features/constraints), **CONTEXT** (D-XX decisions from CONTEXT.md).
 
@@ -104,7 +104,7 @@ Exclusions (not gaps): Deferred Ideas in CONTEXT.md, items scoped to other phase
 <planner_authority_limits>
 ## The Planner Does Not Decide What Is Too Hard
 
-@.agent/get-shit-done/references/planner-source-audit.md for constraint examples.
+@.agent/gsd-core/references/planner-source-audit.md for constraint examples.
 
 The planner has no authority to judge a feature as too difficult, omit features because they seem challenging, or use "complex/difficult/non-trivial" to justify scope reduction.
 
@@ -262,11 +262,11 @@ This prevents the "scavenger hunt" anti-pattern where executors explore the code
 
 ## Specificity
 
-**Test:** Could a different the agent instance execute without asking clarifying questions? If not, add specificity. See @.agent/get-shit-done/references/planner-antipatterns.md for vague-vs-specific comparison table.
+**Test:** Could a different the agent instance execute without asking clarifying questions? If not, add specificity. See @.agent/gsd-core/references/planner-antipatterns.md for vague-vs-specific comparison table.
 
 ## TDD Detection
 
-**When `workflow.tdd_mode` is enabled:** Apply TDD heuristics aggressively — all eligible tasks MUST use `type: tdd`. Read @.agent/get-shit-done/references/tdd.md for gate enforcement rules and the end-of-phase review checkpoint format.
+**When `workflow.tdd_mode` is enabled:** Apply TDD heuristics aggressively — all eligible tasks MUST use `type: tdd`. Read @.agent/gsd-core/references/tdd.md for gate enforcement rules and the end-of-phase review checkpoint format.
 
 **When `workflow.tdd_mode` is disabled (default):** Apply TDD heuristics opportunistically — use `type: tdd` only when the benefit is clear.
 
@@ -304,7 +304,7 @@ Exceptions where `tdd="true"` is not needed: `type="checkpoint:*"` tasks, config
 
 ## MVP Mode Detection
 
-**When `MVP_MODE` is enabled (passed by the plan-phase orchestrator):** Decompose tasks as **vertical feature slices**, not horizontal layers. Required reading: `@.agent/get-shit-done/references/planner-mvp-mode.md` (loaded conditionally by the orchestrator).
+**When `MVP_MODE` is enabled (passed by the plan-phase orchestrator):** Decompose tasks as **vertical feature slices**, not horizontal layers. Required reading: `@.agent/gsd-core/references/planner-mvp-mode.md` (loaded conditionally by the orchestrator).
 
 **Core rule:** After each task completes, a real user can do something they could not do after the previous task. If a task only "lays foundation," it is horizontal disguised as vertical — restructure.
 
@@ -318,7 +318,7 @@ Exceptions where `tdd="true"` is not needed: `type="checkpoint:*"` tasks, config
    **As a** [user role], **I want to** [capability], **so that** [outcome].
    ```
 
-   Format rules from `@.agent/get-shit-done/references/user-story-template.md`:
+   Format rules from `@.agent/gsd-core/references/user-story-template.md`:
    - All three slots required. If the ROADMAP `**Goal:**` line is not in user-story format, surface the discrepancy and ask the user to run `/gsd mvp-phase ${PHASE}` first — do not invent a story.
    - Bold the three keywords (`**As a**`, `**I want to**`, `**so that**`) when emitting to PLAN.md. The ROADMAP form does not use bolded keywords; the PLAN form does.
 2. First task: failing end-to-end test for the happy path.
@@ -327,7 +327,7 @@ Exceptions where `tdd="true"` is not needed: `type="checkpoint:*"` tasks, config
 
 **Mode is all-or-nothing per phase** (PRD decision Q1). Do not produce a plan that mixes vertical-slice tasks with horizontal layer tasks within the same phase.
 
-**Walking Skeleton mode** (`WALKING_SKELETON=true`, set by orchestrator for Phase 1 + new project under `--mvp`): The first deliverable is a Walking Skeleton — the thinnest possible end-to-end stack. In addition to `PLAN.md`, produce `SKELETON.md` using the template at `@.agent/get-shit-done/references/skeleton-template.md`. `SKELETON.md` records architectural decisions (framework, DB, auth, deployment, directory layout) that subsequent phases will build on without renegotiating.
+**Walking Skeleton mode** (`WALKING_SKELETON=true`, set by orchestrator for Phase 1 + new project under `--mvp`): The first deliverable is a Walking Skeleton — the thinnest possible end-to-end stack. In addition to `PLAN.md`, produce `SKELETON.md` using the template at `@.agent/gsd-core/references/skeleton-template.md`. `SKELETON.md` records architectural decisions (framework, DB, auth, deployment, directory layout) that subsequent phases will build on without renegotiating.
 
 **Compatibility with TDD detection:** When both `MVP_MODE=true` and `workflow.tdd_mode=true`, every behavior-adding task uses `tdd="true"` and a `<behavior>` block, AND the task ordering follows the vertical-slice structure above. The first task is always a failing end-to-end test.
 
@@ -442,8 +442,8 @@ Output: [Artifacts created]
 </objective>
 
 <execution_context>
-@.agent/get-shit-done/workflows/execute-plan.md
-@.agent/get-shit-done/templates/summary.md
+@.agent/gsd-core/workflows/execute-plan.md
+@.agent/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
@@ -515,7 +515,7 @@ Wave numbers are pre-computed during planning. Execute-phase reads `wave` direct
 
 ## Interface Context for Executors
 
-See `get-shit-done/references/planner-interface-context.md` for the full interface extraction guide.
+See `gsd-core/references/planner-interface-context.md` for the full interface extraction guide.
 
 ## Context Section Rules
 
@@ -695,7 +695,7 @@ When the agent tries CLI/API and gets auth error → creates checkpoint → user
 ## Anti-Patterns and Extended Examples
 
 For checkpoint anti-patterns, specificity comparison tables, context section anti-patterns, and scope reduction patterns:
-@.agent/get-shit-done/references/planner-antipatterns.md
+@.agent/gsd-core/references/planner-antipatterns.md
 
 </checkpoints>
 
@@ -746,17 +746,17 @@ TDD plans target ~40% context (lower than standard 50%). The RED→GREEN→REFAC
 </tdd_integration>
 
 <gap_closure_mode>
-See `get-shit-done/references/planner-gap-closure.md`. Load this file at the
+See `gsd-core/references/planner-gap-closure.md`. Load this file at the
 start of execution when `--gaps` flag is detected or gap_closure mode is active.
 </gap_closure_mode>
 
 <revision_mode>
-See `get-shit-done/references/planner-revision.md`. Load this file at the
+See `gsd-core/references/planner-revision.md`. Load this file at the
 start of execution when `<revision_context>` is provided by the orchestrator.
 </revision_mode>
 
 <reviews_mode>
-See `get-shit-done/references/planner-reviews.md`. Load this file at the
+See `gsd-core/references/planner-reviews.md`. Load this file at the
 start of execution when `--reviews` flag is present or reviews mode is active.
 </reviews_mode>
 
@@ -766,7 +766,7 @@ start of execution when `--reviews` flag is present or reviews mode is active.
 Load planning context:
 
 ```bash
-INIT=$(gsd-sdk query init.plan-phase "${PHASE}")
+INIT=$(gsd-tools query init.plan-phase "${PHASE}")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -774,19 +774,17 @@ Extract from init JSON: `planner_model`, `researcher_model`, `checker_model`, `c
 
 Also load planning state (position, decisions, blockers) via the SDK — **use `node` to invoke the CLI** (not `npx`):
 ```bash
-gsd-sdk query state.load 2>/dev/null
+gsd-tools query state.load 2>/dev/null
 ```
-If the SDK is not installed under `node_modules`, use the same `query state.load` argv with your local `gsd-sdk` CLI on `PATH`.
-
 If STATE.md missing but .planning/ exists, offer to reconstruct or continue without.
 </step>
 
 <step name="load_mode_context">
 Check the invocation mode and load the relevant reference file:
 
-- If `--gaps` flag or gap_closure context present: Read `get-shit-done/references/planner-gap-closure.md`
-- If `<revision_context>` provided by orchestrator: Read `get-shit-done/references/planner-revision.md`
-- If `--reviews` flag present or reviews mode active: Read `get-shit-done/references/planner-reviews.md`
+- If `--gaps` flag or gap_closure context present: Read `gsd-core/references/planner-gap-closure.md`
+- If `<revision_context>` provided by orchestrator: Read `gsd-core/references/planner-revision.md`
+- If `--reviews` flag present or reviews mode active: Read `gsd-core/references/planner-reviews.md`
 - Standard planning mode: no additional file to read
 
 Load the file before proceeding to planning steps. The reference file contains the full
@@ -824,7 +822,7 @@ ls .planning/graphs/graph.json 2>/dev/null
 If graph.json exists, check freshness:
 
 ```bash
-node ".agent/get-shit-done/bin/gsd-tools.cjs" graphify status
+node ".agent/gsd-core/bin/gsd-tools.cjs" graphify status
 ```
 
 If the status response has `stale: true`, note for later: "Graph is {age_hours}h old -- treat semantic relationships as approximate." Include this annotation inline with any graph context injected below.
@@ -832,10 +830,10 @@ If the status response has `stale: true`, note for later: "Graph is {age_hours}h
 Query the graph for phase-relevant dependency context (single query per D-06):
 
 ```bash
-node ".agent/get-shit-done/bin/gsd-tools.cjs" graphify query "<phase-goal-keyword>" --budget 2000
+node ".agent/gsd-core/bin/gsd-tools.cjs" graphify query "<phase-goal-keyword>" --budget 2000
 ```
 
-(graphify is not exposed on `gsd-sdk query` yet; use `gsd-tools.cjs` for graphify only.)
+(graphify is not exposed on `gsd-tools query` yet; use `gsd-tools.cjs` for graphify only.)
 
 Use the keyword that best captures the phase goal. Examples:
 - Phase "User Authentication" -> query term "auth"
@@ -872,7 +870,7 @@ Apply discovery level protocol (see discovery_levels section).
 
 **Step 1 — Generate digest index:**
 ```bash
-gsd-sdk query history-digest
+gsd-tools query history-digest
 ```
 
 **Step 2 — Select relevant phases (typically 2-4):**
@@ -917,7 +915,7 @@ Read the most recent milestone retrospective and cross-milestone trends. Extract
 </step>
 
 <step name="inject_global_learnings">
-If `features.global_learnings` is `true`: run `gsd-sdk query learnings.query --tag <tag> --limit 5` once per tag from PLAN.md frontmatter `tags` (or use the single most specific keyword). The handler matches one `--tag` at a time. Prefix matches with `[Prior learning from <project>]` as weak priors. Project-local decisions take precedence. Skip silently if disabled or no matches.
+If `features.global_learnings` is `true`: run `gsd-tools query learnings.query --tag <tag> --limit 5` once per tag from PLAN.md frontmatter `tags` (or use the single most specific keyword). The handler matches one `--tag` at a time. Prefix matches with `[Prior learning from <project>]` as weak priors. Project-local decisions take precedence. Skip silently if disabled or no matches.
 </step>
 
 <step name="gather_phase_context">
@@ -938,7 +936,7 @@ cat "$phase_dir"/*-DISCOVERY.md 2>/dev/null  # From mandatory discovery
 
 <step name="break_into_tasks">
 At decision points during plan creation, apply structured reasoning:
-@.agent/get-shit-done/references/thinking-models-planning.md
+@.agent/gsd-core/references/thinking-models-planning.md
 
 Decompose phase into tasks. **Think dependencies first, not sequence.**
 
@@ -1018,6 +1016,19 @@ Use template structure for each PLAN.md.
 
 **ALWAYS use the Write tool to create files** — never use `Bash(cat << 'EOF')` or heredoc commands for file creation.
 
+**Write contract (hard rules — must follow):**
+
+These PLAN.md files are the canonical output of this agent. The orchestrator reads each `.planning/phases/{padded_phase}-{slug}/{padded_phase}-{NN}-PLAN.md` from disk after you return; it does NOT read your return message for the file content.
+
+1. **Default: write each PLAN.md in a single `Write` call.** On most runtimes this is correct and reliable — do this unless rule 4 applies.
+2. **Do NOT return the PLAN.md content in your response.** Your return message is a brief confirmation (see `<structured_returns>`); the content lives on disk.
+3. **Do NOT use `Bash(cat << 'EOF')` or heredoc** for file creation. Use the `Write` tool.
+4. **Large-file / truncation fallback.** Some runtimes (e.g. OpenCode) cap tool-call output, and a single oversized `Write` is truncated mid-payload — surfacing a tool error such as `JSON Parse error: Expected '}'`. If a `Write` fails with a truncation / invalid-tool error, **do NOT retry the same oversized call** (that loops forever). Instead build the file incrementally so no single tool call carries the whole payload:
+   - `Write` the file with only the first section, ending with the sentinel line `<!-- gsd-write-continue -->`.
+   - `Read` the file, then `Edit` it, replacing `<!-- gsd-write-continue -->` with the next section followed by the sentinel again. Repeat, one section per `Edit`.
+   - On the final section, replace the sentinel with the closing content and no trailing sentinel.
+5. **If writing still fails, surface the actual error in your return message.** **Do NOT silently fall back to returning content** — that hides the failure from the orchestrator and truncates identically.
+
 **CRITICAL — File naming convention (enforced):**
 
 The filename MUST follow the exact pattern: `{padded_phase}-{NN}-PLAN.md`
@@ -1043,10 +1054,10 @@ Include all frontmatter fields.
 </step>
 
 <step name="validate_plan">
-Validate each created PLAN.md using `gsd-sdk query`:
+Validate each created PLAN.md using `gsd-tools query`:
 
 ```bash
-VALID=$(gsd-sdk query frontmatter.validate "$PLAN_PATH" --schema plan)
+VALID=$(gsd-tools query frontmatter.validate "$PLAN_PATH" --schema plan)
 ```
 
 Returns JSON: `{ valid, missing, present, schema }`
@@ -1059,7 +1070,7 @@ Required plan frontmatter fields:
 Also validate plan structure:
 
 ```bash
-STRUCTURE=$(gsd-sdk query verify.plan-structure "$PLAN_PATH")
+STRUCTURE=$(gsd-tools query verify.plan-structure "$PLAN_PATH")
 ```
 
 Returns JSON: `{ valid, errors, warnings, task_count, tasks }`
@@ -1096,7 +1107,7 @@ Plans:
 
 <step name="git_commit">
 ```bash
-gsd-sdk query commit "docs($PHASE): create phase plan" --files \
+gsd-tools query commit "docs($PHASE): create phase plan" --files \
   .planning/phases/$PHASE-*/$PHASE-*-PLAN.md .planning/ROADMAP.md
 ```
 </step>
@@ -1163,7 +1174,7 @@ Follow templates in checkpoints and revision_mode sections respectively.
 
 ## Chunked Mode Returns
 
-See @.agent/get-shit-done/references/planner-chunked.md for `## OUTLINE COMPLETE` and `## PLAN COMPLETE` return formats used in chunked mode.
+See @.agent/gsd-core/references/planner-chunked.md for `## OUTLINE COMPLETE` and `## PLAN COMPLETE` return formats used in chunked mode.
 
 </structured_returns>
 

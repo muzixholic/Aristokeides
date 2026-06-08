@@ -14,7 +14,7 @@ Output ONLY the reference content of the chosen tier. Do NOT add:
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/help.md
+@~/.gemini/antigravity/gsd-core/workflows/help.md
 </execution_context>
 
 <context>
@@ -22,5 +22,5 @@ Arguments: $ARGUMENTS
 </context>
 
 <process>
-Follow ~/.gemini/antigravity/get-shit-done/workflows/help.md with $ARGUMENTS.
+Follow ~/.gemini/antigravity/gsd-core/workflows/help.md with $ARGUMENTS.
 </process>

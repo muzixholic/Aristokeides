@@ -16,7 +16,7 @@ Flag handling rule:
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/docs-update.md
+@~/.gemini/antigravity/gsd-core/workflows/docs-update.md
 </execution_context>
 
 <context>

@@ -13,6 +13,140 @@
 
 <PageTitle>@Username/@RepoName - Pull Request #@LocalId</PageTitle>
 
+<style>
+    .diff-line-row {
+        position: relative;
+    }
+    .diff-line-row:hover .add-comment-btn {
+        display: inline-flex !important;
+    }
+    .add-comment-btn {
+        display: none !important;
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        width: 18px;
+        height: 18px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 1;
+        z-index: 10;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .add-comment-btn:hover {
+        background-color: #1d4ed8;
+    }
+
+    /* 에디터 탭 스타일 */
+    .editor-tabs {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 8px;
+    }
+    .editor-tab-btn {
+        background: none;
+        border: none;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.2s;
+    }
+    .editor-tab-btn:hover {
+        color: #374151;
+    }
+    .editor-tab-btn.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+    }
+    .preview-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 8px 12px;
+        min-height: 80px;
+        background-color: #f9fafb;
+        font-size: 13px;
+        color: #374151;
+    }
+    .markdown-body {
+        font-size: 13px;
+        line-height: 1.5;
+        color: #24292f;
+    }
+    .markdown-body p {
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+    .markdown-body ul, .markdown-body ol {
+        padding-left: 20px;
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+    .markdown-body code {
+        padding: .2em .4em;
+        margin: 0;
+        font-size: 85%;
+        background-color: rgba(175,184,193,0.2);
+        border-radius: 6px;
+        font-family: ui-monospace,SFMono-Regular,SF Pro Text,liberation mono,monospace;
+    }
+
+    /* 댓글 스레드 스타일 */
+    .comment-thread-container {
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        background-color: #ffffff;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .comment-header {
+        background-color: #f6f8fa;
+        padding: 8px 12px;
+        border-bottom: 1px solid #e1e4e8;
+        font-size: 12px;
+        color: #586069;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+    .comment-body {
+        padding: 12px;
+        font-size: 13px;
+        color: #24292f;
+    }
+    .reply-thread {
+        margin-left: 24px;
+        border-left: 2px solid #e1e4e8;
+        padding-left: 12px;
+        margin-top: 8px;
+    }
+    .resolved-banner {
+        background-color: #f1f5f9;
+        color: #475569;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #cbd5e1;
+        margin-bottom: 8px;
+    }
+</style>
+
 <div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
     <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
     <div style="margin-top: 16px; display: flex; gap: 16px;">
@@ -70,6 +204,58 @@
 
         <div style="display: flex; gap: 24px;">
             <div style="flex-grow: 1; max-width: 700px;">
+                @if (pendingCommentsCount > 0)
+                {
+                    <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background-color: #ea580c; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Pending Review</span>
+                            <span style="font-size: 13px; font-weight: 500; color: #7c2d12;">You have @pendingCommentsCount pending comment(s). Submit them to finish your review.</span>
+                        </div>
+                        <button @onclick="ToggleSubmitReviewPanel" style="background-color: #ea580c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;">
+                            Submit review
+                        </button>
+                    </div>
+                    
+                    @if (showSubmitReviewPanel)
+                    {
+                        <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                            <h4 style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #111827;">Submit review</h4>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 4px;">Summary comment</label>
+                                <textarea @bind="reviewBody" rows="3" placeholder="Leave a summary comment..." style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px; font-size: 12px; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 6px;">Review Type</label>
+                                <div style="display: flex; gap: 16px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: #374151;">
+                                        <input type="radio" name="reviewState" value="@PullRequestReviewState.Comment" checked="@(selectedReviewState == PullRequestReviewState.Comment)" @onclick="() => selectedReviewState = PullRequestReviewState.Comment" />
+                                        Comment
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: #166534;">
+                                        <input type="radio" name="reviewState" value="@PullRequestReviewState.Approved" checked="@(selectedReviewState == PullRequestReviewState.Approved)" @onclick="() => selectedReviewState = PullRequestReviewState.Approved" />
+                                        Approve
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: #991b1b;">
+                                        <input type="radio" name="reviewState" value="@PullRequestReviewState.ChangesRequested" checked="@(selectedReviewState == PullRequestReviewState.ChangesRequested)" @onclick="() => selectedReviewState = PullRequestReviewState.ChangesRequested" />
+                                        Request Changes
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                <button @onclick="ToggleSubmitReviewPanel" style="background-color: white; border: 1px solid #d1d5db; color: #374151; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                    Cancel
+                                </button>
+                                <button @onclick="SubmitReview" disabled="@isSubmittingReview" style="background-color: #2563eb; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                    @(isSubmittingReview ? "Submitting..." : "Submit")
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+
                 <!-- Original Issue Body -->
                 <div style="display: flex; gap: 16px; margin-bottom: 24px;">
                     <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
@@ -79,40 +265,385 @@
                         <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
                             <span style="font-weight: 600; color: #111827;">@pullRequest.Issue?.Creator?.Username</span> commented on @pullRequest.Issue?.CreatedAt.ToString("MMM d, yyyy")
                         </div>
-                        <div style="padding: 16px; font-size: 14px; color: #111827; white-space: pre-wrap;">
-                            @(string.IsNullOrEmpty(pullRequest.Issue?.Description) ? "*No description provided.*" : pullRequest.Issue?.Description)
+                        <div style="padding: 16px; font-size: 14px; color: #111827;" class="markdown-body">
+                            @((MarkupString)MarkdownRenderer.RenderHtml(string.IsNullOrEmpty(pullRequest.Issue?.Description) ? "*No description provided.*" : pullRequest.Issue.Description))
                         </div>
                     </div>
                 </div>
 
-                <!-- Comments -->
-                @if (pullRequest.Issue?.Comments != null)
+                <!-- Timeline (Comments & Reviews) -->
+                @if (timelineItems != null && timelineItems.Any())
                 {
-                    @foreach (var comment in pullRequest.Issue.Comments.OrderBy(c => c.CreatedAt))
+                    @foreach (var item in timelineItems)
                     {
-                        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-                            <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
-                                @(comment.Author?.Username?.FirstOrDefault().ToString().ToUpper() ?? "?")
-                            </div>
-                            <div style="flex-grow: 1; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                                <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
-                                    <span style="font-weight: 600; color: #111827;">@comment.Author?.Username</span> commented on @comment.CreatedAt.ToString("MMM d, yyyy")
+                        if (item.Type == "Comment" && item.IssueComment != null)
+                        {
+                            var comment = item.IssueComment;
+                            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                                <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">
+                                    @(comment.Author?.Username?.FirstOrDefault().ToString().ToUpper() ?? "?")
                                 </div>
-                                <div style="padding: 16px; font-size: 14px; color: #111827; white-space: pre-wrap;">@comment.Content</div>
+                                <div style="flex-grow: 1; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                                    <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
+                                        <span style="font-weight: 600; color: #111827;">@comment.Author?.Username</span> commented on @comment.CreatedAt.ToString("MMM d, yyyy")
+                                    </div>
+                                    <div style="padding: 16px; font-size: 14px; color: #111827;" class="markdown-body">
+                                        @((MarkupString)MarkdownRenderer.RenderHtml(comment.Content))
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        }
+                        else if (item.Type == "Review" && item.Review != null)
+                        {
+                            var review = item.Review;
+                            @if (review.State == PullRequestReviewState.Dismissed)
+                            {
+                                <div style="display: flex; gap: 16px; margin-bottom: 24px; align-items: center; padding: 12px 16px; background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px;">
+                                    <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: #ffedd5; display: flex; align-items: center; justify-content: center; color: #ea580c;">
+                                        <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5z"></path></svg>
+                                    </div>
+                                    <div style="flex-grow: 1; font-size: 13px; color: #c2410c;">
+                                        <span style="font-weight: 600; color: #111827;">@review.Author?.Username</span>'s approved status was dismissed because of new commits.
+                                        @if (!string.IsNullOrEmpty(review.Body))
+                                        {
+                                            <div style="margin-top: 4px; padding-left: 8px; border-left: 2px solid #fdba74; color: #9a3412; font-style: italic;">
+                                                "@review.Body"
+                                            </div>
+                                        }
+                                    </div>
+                                    <div style="font-size: 11px; color: #9a3412;">
+                                        @review.CreatedAt.ToString("MMM d, yyyy HH:mm")
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                string stateBg = "";
+                                string stateBorder = "";
+                                string stateText = "";
+                                string stateLabel = "";
+                                string badgeColor = "";
+                                
+                                if (review.State == PullRequestReviewState.Approved)
+                                {
+                                    stateBg = "#f0fdf4";
+                                    stateBorder = "#bbf7d0";
+                                    stateText = "#166534";
+                                    stateLabel = "approved these changes";
+                                    badgeColor = "#22c55e";
+                                }
+                                else if (review.State == PullRequestReviewState.ChangesRequested)
+                                {
+                                    stateBg = "#fef2f2";
+                                    stateBorder = "#fecaca";
+                                    stateText = "#991b1b";
+                                    stateLabel = "requested changes";
+                                    badgeColor = "#ef4444";
+                                }
+                                else
+                                {
+                                    stateBg = "#f9fafb";
+                                    stateBorder = "#e5e7eb";
+                                    stateText = "#374151";
+                                    stateLabel = "left review comments";
+                                    badgeColor = "#6b7280";
+                                }
+
+                                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                                    <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background-color: @badgeColor; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                                        @(review.Author?.Username?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                                    </div>
+                                    <div style="flex-grow: 1; border: 1px solid @stateBorder; border-radius: 6px; overflow: hidden; background-color: @stateBg;">
+                                        <div style="padding: 12px 16px; border-bottom: 1px solid @stateBorder; font-size: 13px; color: @stateText; display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <span style="font-weight: 600; color: #111827;">@review.Author?.Username</span> 
+                                                <span style="font-weight: 500;">@stateLabel</span> on @review.CreatedAt.ToString("MMM d, yyyy")
+                                            </div>
+                                            <span style="background-color: @badgeColor; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase;">
+                                                @review.State.ToString()
+                                            </span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(review.Body))
+                                        {
+                                            <div style="padding: 16px; font-size: 14px; color: #111827;" class="markdown-body">
+                                                @((MarkupString)MarkdownRenderer.RenderHtml(review.Body))
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
                     }
                 }
 
-                @if (diffContent != null)
+                @if (diffFiles != null && diffFiles.Any())
                 {
                     <div style="margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                        <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
-                            <span>Changes</span>
+                        <div style="background-color: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 14px;">
+                            Files Changed
                         </div>
-                        <div style="padding: 16px; overflow-x: auto; font-family: monospace; font-size: 12px; background-color: #ffffff; white-space: pre-wrap;">
-                            <code class="language-diff">@diffContent</code>
-                        </div>
+                        @foreach (var file in diffFiles)
+                        {
+                            <div style="border-bottom: 1px solid #e5e7eb; overflow: hidden;">
+                                <div style="background-color: #f1f5f9; padding: 8px 12px; font-family: monospace; font-size: 13px; font-weight: 600; color: #374151; border-bottom: 1px solid #e2e8f0;">
+                                    @file.Path
+                                </div>
+                                <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; background-color: #ffffff;">
+                                    @foreach (var hunk in file.Hunks)
+                                    {
+                                        <tr style="background-color: #f8fafc; color: #0284c7; font-style: italic; border-bottom: 1px solid #f1f5f9;">
+                                            <td colspan="2" style="width: 80px; text-align: center; padding: 4px 8px; border-right: 1px solid #e2e8f0; user-select: none; color: #9ca3af;">...</td>
+                                            <td style="padding: 4px 12px;">@hunk.Header</td>
+                                        </tr>
+                                        @foreach (var line in hunk.Lines)
+                                        {
+                                            var currentLine = line;
+                                            var filePath = file.Path;
+                                            var hunkHeader = hunk.Header;
+
+                                            var commentsForLine = reviewComments
+                                                .Where(c => c.FilePath == filePath && 
+                                                            c.OldLineNumber == currentLine.OldLineNumber && 
+                                                            c.NewLineNumber == currentLine.NewLineNumber &&
+                                                            c.ParentId == null)
+                                                .ToList();
+
+                                            string bgStyle = "";
+                                            string textStyle = "color: #374151;";
+                                            string prefix = " ";
+                                            if (currentLine.LineType == "Addition")
+                                            {
+                                                bgStyle = "background-color: #f0fdf4;";
+                                                textStyle = "color: #166534;";
+                                                prefix = "+";
+                                            }
+                                            else if (currentLine.LineType == "Deletion")
+                                            {
+                                                bgStyle = "background-color: #fef2f2;";
+                                                textStyle = "color: #991b1b;";
+                                                prefix = "-";
+                                            }
+                                            else
+                                            {
+                                                bgStyle = "background-color: #ffffff;";
+                                            }
+
+                                            <tr class="diff-line-row" style="@bgStyle">
+                                                <td style="width: 40px; text-align: right; color: #9ca3af; padding: 2px 8px; border-right: 1px solid #e5e7eb; user-select: none; background-color: #f9fafb;">
+                                                    @(currentLine.OldLineNumber?.ToString() ?? "")
+                                                </td>
+                                                <td style="width: 40px; text-align: right; color: #9ca3af; padding: 2px 8px; border-right: 1px solid #e5e7eb; user-select: none; background-color: #f9fafb; position: relative;">
+                                                    @(currentLine.NewLineNumber?.ToString() ?? "")
+                                                    @if (currentUserId != 0 && (currentLine.OldLineNumber != null || currentLine.NewLineNumber != null))
+                                                    {
+                                                        <button class="add-comment-btn" aria-label="Add comment" @onclick="() => OpenCommentForm(filePath, currentLine.OldLineNumber, currentLine.NewLineNumber)">+</button>
+                                                    }
+                                                </td>
+                                                <td style="padding: 2px 12px; white-space: pre-wrap; font-family: inherit; @textStyle">
+                                                    @prefix @currentLine.Content
+                                                </td>
+                                            </tr>
+
+                                            @if (commentsForLine.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="2" style="background-color: #f9fafb; border-right: 1px solid #e5e7eb;"></td>
+                                                    <td style="padding: 8px 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                                                        @foreach (var c in commentsForLine)
+                                                        {
+                                                            var isOutdated = c.IsOutdated;
+                                                            var isResolved = c.IsResolved;
+                                                            var showOutdated = expandedOutdatedComments.Contains(c.Id);
+                                                            var showResolved = expandedResolvedComments.Contains(c.Id);
+
+                                                            if (isOutdated && !showOutdated)
+                                                            {
+                                                                <div class="resolved-banner" style="background-color: #f3f4f6; color: #4b5563; border-color: #d1d5db; margin-bottom: 8px;">
+                                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                                        <span style="background-color: #6b7280; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">Outdated</span>
+                                                                        <span>Outdated conversation</span>
+                                                                    </div>
+                                                                    <button @onclick="() => ToggleOutdatedConversation(c.Id)" style="background: none; border: none; color: #2563eb; font-size: 12px; cursor: pointer; font-weight: 500;">
+                                                                        Show outdated conversation
+                                                                    </button>
+                                                                </div>
+                                                            }
+                                                            else if (isResolved && !showResolved)
+                                                            {
+                                                                <div class="resolved-banner">
+                                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                                        <span style="background-color: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">Resolved</span>
+                                                                        <span>Conversation resolved by @c.Author?.Username</span>
+                                                                    </div>
+                                                                    <button @onclick="() => ToggleResolvedConversation(c.Id)" style="background: none; border: none; color: #2563eb; font-size: 12px; cursor: pointer; font-weight: 500;">
+                                                                        Show conversation
+                                                                    </button>
+                                                                </div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="comment-thread-container" style="@(isOutdated ? "border-color: #d1d5db; opacity: 0.85; margin-bottom: 12px;" : "margin-bottom: 12px;")">
+                                                                    @if (isOutdated)
+                                                                    {
+                                                                        <div style="background-color: #f3f4f6; padding: 6px 12px; border-bottom: 1px solid #e1e4e8; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #4b5563;">
+                                                                            <span style="font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                                                                <span style="background-color: #6b7280; color: white; padding: 2px 6px; border-radius: 10px; font-size: 9px;">Outdated</span>
+                                                                                This conversation is outdated.
+                                                                            </span>
+                                                                            <button @onclick="() => ToggleOutdatedConversation(c.Id)" style="background: none; border: none; color: #64748b; cursor: pointer;">Hide outdated conversation</button>
+                                                                        </div>
+                                                                    }
+                                                                    else if (isResolved)
+                                                                    {
+                                                                        <div style="background-color: #f1f5f9; padding: 6px 12px; border-bottom: 1px solid #e1e4e8; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #475569;">
+                                                                            <span style="font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                                                                <span style="background-color: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 9px;">Resolved</span>
+                                                                                This conversation is resolved.
+                                                                            </span>
+                                                                            <div style="display: flex; gap: 8px;">
+                                                                                <button @onclick="() => ToggleResolvedConversation(c.Id)" style="background: none; border: none; color: #64748b; cursor: pointer;">Hide</button>
+                                                                                @if (currentUserId != 0)
+                                                                                {
+                                                                                    <button @onclick="() => UnresolveComment(c.Id)" style="background: none; border: none; color: #2563eb; cursor: pointer; font-weight: 500;">Unresolve conversation</button>
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    }
+
+                                                                    <div style="border-bottom: 1px solid #e1e4e8; background-color: #ffffff;">
+                                                                        <div class="comment-header">
+                                                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                                                <span style="font-weight: 600; color: #24292f;">@c.Author?.Username</span>
+                                                                                @if (c.IsPending)
+                                                                                {
+                                                                                    <span style="background-color: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">Pending</span>
+                                                                                }
+                                                                            </div>
+                                                                            <div style="display: flex; align-items: center; gap: 12px;">
+                                                                                <span>@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                                                                                @if (!isResolved && currentUserId != 0)
+                                                                                {
+                                                                                    <button @onclick="() => ResolveComment(c.Id)" style="background: none; border: 1px solid #d1d5db; padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #4b5563; cursor: pointer;">
+                                                                                        Resolve conversation
+                                                                                    </button>
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="comment-body markdown-body">
+                                                                            @((MarkupString)MarkdownRenderer.RenderHtml(c.Content))
+                                                                        </div>
+                                                                    </div>
+
+                                                                    @foreach (var reply in c.Replies.OrderBy(r => r.CreatedAt))
+                                                                    {
+                                                                        <div class="reply-thread">
+                                                                            <div class="comment-thread-container" style="margin-bottom: 4px;">
+                                                                                <div class="comment-header">
+                                                                                    <span style="font-weight: 600; color: #24292f;">@reply.Author?.Username</span>
+                                                                                    <span>@reply.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                                                                                </div>
+                                                                                <div class="comment-body markdown-body">
+                                                                                    @((MarkupString)MarkdownRenderer.RenderHtml(reply.Content))
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    }
+
+                                                                    @if (currentUserId != 0)
+                                                                    {
+                                                                        var parentId = c.Id;
+                                                                        var showForm = activeReplyForms.Contains(parentId);
+                                                                        if (!showForm)
+                                                                        {
+                                                                            <div style="padding: 8px 12px; background-color: #fafbfc; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; display: flex; justify-content: flex-end;">
+                                                                                <button @onclick="() => OpenReplyForm(parentId)" style="background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: #586069; cursor: pointer;">
+                                                                                    Reply
+                                                                                </button>
+                                                                            </div>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            var replyText = GetReplyText(parentId);
+                                                                            var activeTab = GetReplyTab(parentId);
+
+                                                                            <div style="padding: 12px; background-color: #fafbfc; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; border-top: 1px solid #e1e4e8;">
+                                                                                <div class="editor-tabs">
+                                                                                    <button class="editor-tab-btn @(activeTab == "write" ? "active" : "")" @onclick='() => SetReplyTab(parentId, "write")'>Write</button>
+                                                                                    <button class="editor-tab-btn @(activeTab == "preview" ? "active" : "")" @onclick='() => SetReplyTab(parentId, "preview")'>Preview</button>
+                                                                                </div>
+
+                                                                                @if (activeTab == "write")
+                                                                                {
+                                                                                    <textarea value="@replyText" @oninput="(e) => UpdateReplyText(parentId, e.Value?.ToString() ?? string.Empty)" rows="3" placeholder="Reply to this conversation..." style="width: 100%; font-size: 12px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px; resize: vertical; margin-bottom: 8px;"></textarea>
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <div class="preview-container markdown-body" style="margin-bottom: 8px;">
+                                                                                        @((MarkupString)MarkdownRenderer.RenderHtml(replyText))
+                                                                                    </div>
+                                                                                }
+
+                                                                                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                                                                    <button @onclick="() => CloseReplyForm(parentId)" style="background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                                                                        Cancel
+                                                                                    </button>
+                                                                                    <button @onclick="() => SubmitReplyComment(parentId)" style="background-color: #2563eb; color: #ffffff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;" disabled="@string.IsNullOrWhiteSpace(replyText)">
+                                                                                        Reply
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        }
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+
+                                            @if (activeCommentFile == filePath && 
+                                                 activeCommentOldLine == currentLine.OldLineNumber && 
+                                                 activeCommentNewLine == currentLine.NewLineNumber)
+                                            {
+                                                <tr>
+                                                    <td colspan="2" style="background-color: #f9fafb; border-right: 1px solid #e5e7eb;"></td>
+                                                    <td style="padding: 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                                                        <div style="border: 1px solid #e5e7eb; border-radius: 6px; background-color: #ffffff; padding: 12px;">
+                                                            <div style="font-weight: 600; font-size: 12px; margin-bottom: 8px; color: #374151;">Add a review comment</div>
+                                                            <div class="editor-tabs">
+                                                                <button class="editor-tab-btn @(activeInlineTab == "write" ? "active" : "")" @onclick='() => activeInlineTab = "write"'>Write</button>
+                                                                <button class="editor-tab-btn @(activeInlineTab == "preview" ? "active" : "")" @onclick='() => activeInlineTab = "preview"'>Preview</button>
+                                                            </div>
+                                                            @if (activeInlineTab == "write")
+                                                            {
+                                                                <textarea @bind="activeCommentText" rows="3" placeholder="Write a comment..." style="width: 100%; font-size: 12px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px; resize: vertical; margin-bottom: 8px;"></textarea>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="preview-container markdown-body" style="margin-bottom: 8px;">
+                                                                    @((MarkupString)MarkdownRenderer.RenderHtml(activeCommentText))
+                                                                </div>
+                                                            }
+                                                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                                                <button @onclick="CancelCommentForm" style="background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                                                    Cancel
+                                                                </button>
+                                                                <button @onclick="() => SubmitInlineComment(filePath, currentLine.LineType, currentLine.OldLineNumber, currentLine.NewLineNumber, hunkHeader, false)" style="background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                                                    Add single comment
+                                                                </button>
+                                                                <button @onclick="() => SubmitInlineComment(filePath, currentLine.LineType, currentLine.OldLineNumber, currentLine.NewLineNumber, hunkHeader, true)" style="background-color: #2563eb; color: #ffffff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                                                    @(hasPendingComments ? "Add review comment" : "Start a review")
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    }
+                                </table>
+                            </div>
+                        }
                     </div>
                 }
 
@@ -126,8 +657,21 @@
                         <div style="background-color: #f9fafb; padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 14px; color: #374151;">
                             Leave a comment
                         </div>
-                        <div style="padding: 8px;">
-                            <textarea @bind="newComment" rows="4" placeholder="Leave a comment" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px; resize: vertical; margin-bottom: 8px;"></textarea>
+                        <div style="padding: 12px;">
+                            <div class="editor-tabs">
+                                <button class="editor-tab-btn @(activeGeneralTab == "write" ? "active" : "")" @onclick='() => activeGeneralTab = "write"'>Write</button>
+                                <button class="editor-tab-btn @(activeGeneralTab == "preview" ? "active" : "")" @onclick='() => activeGeneralTab = "preview"'>Preview</button>
+                            </div>
+                            @if (activeGeneralTab == "write")
+                            {
+                                <textarea @bind="newComment" rows="4" placeholder="Leave a comment" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px; resize: vertical; margin-bottom: 8px;"></textarea>
+                            }
+                            else
+                            {
+                                <div class="preview-container markdown-body" style="margin-bottom: 8px; min-height: 100px;">
+                                    @((MarkupString)MarkdownRenderer.RenderHtml(newComment))
+                                </div>
+                            }
                             <div style="display: flex; justify-content: flex-end;">
                                 <button @onclick="AddComment" disabled="@isSubmittingComment" style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
                                     Comment
@@ -171,9 +715,40 @@
                                 <svg style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>
                                 This branch has no conflicts with the base branch.
                             </div>
-                            <button @onclick="MergePullRequest" disabled="@isMerging" style="width: 100%; background-color: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
-                                @(isMerging ? "Merging..." : "Merge pull request")
-                            </button>
+                            
+                            @if (hasUnresolvedComments)
+                            {
+                                <div style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+                                    <span style="font-weight: 600;">Merge Blocked</span>
+                                    <p style="margin: 4px 0 0 0; font-size: 11px; line-height: 1.4;">Unresolved conversations must be resolved before merging.</p>
+                                </div>
+                                
+                                @if (isAdmin)
+                                {
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #374151; cursor: pointer;">
+                                            <input type="checkbox" @bind="forceMergeChecked" style="margin-top: 2px;" />
+                                            <span>There are unresolved conversations, but I want to force merge.</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <button @onclick="MergePullRequest" disabled="@(isMerging || !forceMergeChecked)" style="width: 100%; background-color: @(forceMergeChecked ? "#ef4444" : "#d1d5db"); color: @(forceMergeChecked ? "white" : "#4b5563"); border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: @(forceMergeChecked ? "pointer" : "not-allowed");">
+                                        @(isMerging ? "Force Merging..." : "Force merge pull request")
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button disabled style="width: 100%; background-color: #d1d5db; color: #4b5563; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: not-allowed;">
+                                        Merge pull request
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <button @onclick="MergePullRequest" disabled="@isMerging" style="width: 100%; background-color: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+                                    @(isMerging ? "Merging..." : "Merge pull request")
+                                </button>
+                            }
                         }
                     }
                 </div>
@@ -235,6 +810,14 @@
                 if (pullRequest != null)
                 {
                     diffContent = await PullRequestService.GetPullRequestDiffAsync(repository.Id, pullRequest);
+                    diffFiles = DiffParser.Parse(diffContent);
+                    
+                    var dbUser = await DbContext.Users.FindAsync(currentUserId);
+                    isAdmin = dbUser?.Role == "Admin";
+
+                    await LoadReviewComments();
+                    await LoadReviews();
+                    await LoadTimeline();
                     
                     if (!pullRequest.IsMerged)
                     {
@@ -269,9 +852,12 @@
 
         try
         {
-            await PullRequestService.MergePullRequestAsync(repository!.Id, pullRequest!, currentUserId);
+            await PullRequestService.MergePullRequestAsync(repository!.Id, pullRequest!, currentUserId, forceMergeChecked);
             // Refresh state
             pullRequest = await PullRequestService.GetPullRequestAsync(repository.Id, LocalId);
+            await LoadReviewComments();
+            await LoadReviews();
+            await LoadTimeline();
         }
         catch (Exception ex)
         {
@@ -294,9 +880,11 @@
         {
             await IssueService.AddCommentAsync(pullRequest.IssueId, currentUserId, newComment);
             newComment = "";
+            activeGeneralTab = "write";
             
             // Refresh comments
             pullRequest = await PullRequestService.GetPullRequestAsync(repository!.Id, LocalId);
+            await LoadTimeline();
         }
         catch (Exception ex)
         {
@@ -306,5 +894,283 @@
         {
             isSubmittingComment = false;
         }
+    }
+
+    private string? activeCommentFile;
+    private int? activeCommentOldLine;
+    private int? activeCommentNewLine;
+    private string activeCommentText = "";
+    private List<PullRequestReviewComment> reviewComments = new();
+    private List<DiffFile> diffFiles = new();
+
+    private string activeInlineTab = "write";
+    private string activeGeneralTab = "write";
+
+    private HashSet<Guid> expandedResolvedComments = new();
+    private HashSet<Guid> activeReplyForms = new();
+    private Dictionary<Guid, string> replyTexts = new();
+    private Dictionary<Guid, string> replyTabs = new();
+
+    private bool isAdmin = false;
+    private bool forceMergeChecked = false;
+    private List<PullRequestReview> reviews = new();
+    private List<TimelineItem> timelineItems = new();
+    
+    private bool showSubmitReviewPanel = false;
+    private string reviewBody = "";
+    private PullRequestReviewState selectedReviewState = PullRequestReviewState.Comment;
+    private bool isSubmittingReview = false;
+    
+    private HashSet<Guid> expandedOutdatedComments = new();
+    
+    private bool hasPendingComments => reviewComments.Any(c => c.AuthorId == currentUserId && c.IsPending);
+    private int pendingCommentsCount => reviewComments.Count(c => c.AuthorId == currentUserId && c.IsPending);
+    private bool hasUnresolvedComments => reviewComments.Any(c => !c.IsResolved && !c.IsPending);
+
+    private void ToggleSubmitReviewPanel()
+    {
+        showSubmitReviewPanel = !showSubmitReviewPanel;
+        if (showSubmitReviewPanel)
+        {
+            reviewBody = "";
+            selectedReviewState = PullRequestReviewState.Comment;
+        }
+    }
+
+    private async Task SubmitReview()
+    {
+        if (pullRequest == null || currentUserId == 0) return;
+        
+        isSubmittingReview = true;
+        errorMessage = null;
+        
+        try
+        {
+            await PullRequestService.SubmitReviewAsync(
+                pullRequest.IssueId,
+                currentUserId,
+                selectedReviewState,
+                string.IsNullOrWhiteSpace(reviewBody) ? null : reviewBody
+            );
+            
+            showSubmitReviewPanel = false;
+            reviewBody = "";
+            
+            await LoadReviewComments();
+            await LoadReviews();
+            await LoadTimeline();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to submit review: " + ex.Message;
+        }
+        finally
+        {
+            isSubmittingReview = false;
+        }
+    }
+
+    private void ToggleOutdatedConversation(Guid commentId)
+    {
+        if (expandedOutdatedComments.Contains(commentId))
+        {
+            expandedOutdatedComments.Remove(commentId);
+        }
+        else
+        {
+            expandedOutdatedComments.Add(commentId);
+        }
+    }
+
+    private async Task LoadReviews()
+    {
+        if (pullRequest != null)
+        {
+            reviews = await DbContext.PullRequestReviews
+                .Include(r => r.Author)
+                .Where(r => r.PullRequestId == pullRequest.IssueId)
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync();
+        }
+    }
+
+    private async Task LoadTimeline()
+    {
+        timelineItems.Clear();
+        
+        if (pullRequest?.Issue?.Comments != null)
+        {
+            foreach (var c in pullRequest.Issue.Comments)
+            {
+                timelineItems.Add(new TimelineItem { CreatedAt = c.CreatedAt, Type = "Comment", IssueComment = c });
+            }
+        }
+        
+        foreach (var r in reviews)
+        {
+            timelineItems.Add(new TimelineItem { CreatedAt = r.CreatedAt, Type = "Review", Review = r });
+        }
+        
+        timelineItems = timelineItems.OrderBy(t => t.CreatedAt).ToList();
+    }
+
+    private void ToggleResolvedConversation(Guid commentId)
+    {
+        if (expandedResolvedComments.Contains(commentId))
+        {
+            expandedResolvedComments.Remove(commentId);
+        }
+        else
+        {
+            expandedResolvedComments.Add(commentId);
+        }
+    }
+
+    private async Task ResolveComment(Guid commentId)
+    {
+        try
+        {
+            await PullRequestService.ResolveReviewCommentAsync(commentId);
+            await LoadReviewComments();
+            await LoadTimeline();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to resolve conversation: " + ex.Message;
+        }
+    }
+
+    private async Task UnresolveComment(Guid commentId)
+    {
+        try
+        {
+            await PullRequestService.UnresolveReviewCommentAsync(commentId);
+            expandedResolvedComments.Add(commentId);
+            await LoadReviewComments();
+            await LoadTimeline();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to unresolve conversation: " + ex.Message;
+        }
+    }
+
+    private void OpenReplyForm(Guid parentId)
+    {
+        activeReplyForms.Add(parentId);
+        if (!replyTexts.ContainsKey(parentId))
+        {
+            replyTexts[parentId] = "";
+        }
+        replyTabs[parentId] = "write";
+    }
+
+    private void CloseReplyForm(Guid parentId)
+    {
+        activeReplyForms.Remove(parentId);
+        replyTexts.Remove(parentId);
+        replyTabs.Remove(parentId);
+    }
+
+    private string GetReplyText(Guid parentId)
+    {
+        return replyTexts.TryGetValue(parentId, out var text) ? text : "";
+    }
+
+    private void UpdateReplyText(Guid parentId, string text)
+    {
+        replyTexts[parentId] = text;
+    }
+
+    private string GetReplyTab(Guid parentId)
+    {
+        return replyTabs.TryGetValue(parentId, out var tab) ? tab : "write";
+    }
+
+    private void SetReplyTab(Guid parentId, string tab)
+    {
+        replyTabs[parentId] = tab;
+    }
+
+    private async Task SubmitReplyComment(Guid parentId)
+    {
+        if (pullRequest == null || currentUserId == 0) return;
+        var text = GetReplyText(parentId);
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        try
+        {
+            await PullRequestService.AddReplyCommentAsync(pullRequest.IssueId, parentId, currentUserId, text);
+            CloseReplyForm(parentId);
+            await LoadReviewComments();
+            await LoadTimeline();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to add reply: " + ex.Message;
+        }
+    }
+
+    private void OpenCommentForm(string filePath, int? oldLine, int? newLine)
+    {
+        activeCommentFile = filePath;
+        activeCommentOldLine = oldLine;
+        activeCommentNewLine = newLine;
+        activeCommentText = "";
+        activeInlineTab = "write";
+    }
+
+    private void CancelCommentForm()
+    {
+        activeCommentFile = null;
+        activeCommentOldLine = null;
+        activeCommentNewLine = null;
+        activeCommentText = "";
+        activeInlineTab = "write";
+    }
+
+    private async Task LoadReviewComments()
+    {
+        if (pullRequest != null)
+        {
+            reviewComments = await PullRequestService.GetReviewCommentsAsync(pullRequest.IssueId);
+        }
+    }
+
+    private async Task SubmitInlineComment(string filePath, string lineType, int? oldLine, int? newLine, string hunkHeader, bool isPending = false)
+    {
+        if (string.IsNullOrWhiteSpace(activeCommentText) || currentUserId == 0 || pullRequest == null)
+            return;
+
+        try
+        {
+            await PullRequestService.AddReviewCommentAsync(
+                pullRequest.IssueId,
+                currentUserId,
+                activeCommentText,
+                filePath,
+                lineType,
+                oldLine,
+                newLine,
+                hunkHeader,
+                isPending
+            );
+
+            CancelCommentForm();
+            await LoadReviewComments();
+            await LoadTimeline();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to add inline comment: " + ex.Message;
+        }
+    }
+
+    private class TimelineItem
+    {
+        public DateTime CreatedAt { get; set; }
+        public string Type { get; set; } = ""; // "Comment" or "Review"
+        public IssueComment? IssueComment { get; set; }
+        public PullRequestReview? Review { get; set; }
     }
 }

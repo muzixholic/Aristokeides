@@ -11,8 +11,8 @@ Routes to the profile-user workflow which orchestrates the full flow: consent ga
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/profile-user.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/workflows/profile-user.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

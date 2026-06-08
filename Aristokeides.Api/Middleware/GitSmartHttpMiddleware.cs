@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using Aristokeides.Api.Data;
+using Aristokeides.Api.Services;
 using Aristokeides.Api.Services.Ssh;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aristokeides.Api.Middleware;
 
@@ -18,7 +20,7 @@ public class GitSmartHttpMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context, AppDbContext db, SshSignatureVerificationService sigService)
+    public async Task InvokeAsync(HttpContext context, AppDbContext db, SshSignatureVerificationService sigService, IServiceProvider serviceProvider)
     {
         var path = context.Request.Path.Value;
         if (string.IsNullOrEmpty(path))
@@ -138,7 +140,7 @@ public class GitSmartHttpMiddleware
         
         await process.WaitForExitAsync();
 
-        // HTTP Push 완료 후 신규 커밋들에 대해 서명 검증 수행
+        // HTTP Push 완료 후 신규 커밋들에 대해 서명 검증 수행 및 브랜치 푸시 후처리 실행
         if (isPush && process.ExitCode == 0 && Directory.Exists(physicalRepoPath))
         {
             _ = Task.Run(async () =>
@@ -156,15 +158,21 @@ public class GitSmartHttpMiddleware
 
                             if (oldOid != newOid)
                             {
-                                _logger.LogInformation("HTTP Push detected: ref {Ref} changed from {Old} to {New}. Verifying signatures...", r.CanonicalName, oldOid, newOid);
+                                _logger.LogInformation("HTTP Push detected: ref {Ref} changed from {Old} to {New}. Verifying signatures & post-push processing...", r.CanonicalName, oldOid, newOid);
                                 await sigService.VerifyNewCommitsAsync(physicalRepoPath, oldOid, newOid, repo.Id);
+
+                                // PullRequestService 후처리 호출
+                                using var scope = serviceProvider.CreateScope();
+                                var prService = scope.ServiceProvider.GetRequiredService<PullRequestService>();
+                                var branchName = r.CanonicalName.Substring("refs/heads/".Length);
+                                await prService.OnBranchPushedAsync(repo.Id, branchName, oldOid, newOid);
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error verifying signatures after HTTP push.");
+                    _logger.LogError(ex, "Error executing HTTP push post-processing (signatures & branch pushed flow).");
                 }
             });
         }

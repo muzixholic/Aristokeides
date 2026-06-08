@@ -10,7 +10,7 @@ Verify milestone achieved its definition of done. Check requirements coverage, c
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/audit-milestone.md
+@~/.gemini/antigravity/gsd-core/workflows/audit-milestone.md
 </execution_context>
 
 <context>

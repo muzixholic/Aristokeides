@@ -119,7 +119,7 @@ public class SshServerAuthTests
     [Fact]
     public async Task PathTraversal_ShouldBeRejected()
     {
-        int testPort = 2225;
+        int testPort = 2227;
         var (publicKey, privateKeyBytes) = GenerateEcdsaKeyPair();
         string fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(publicKey);
 

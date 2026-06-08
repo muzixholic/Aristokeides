@@ -133,6 +133,9 @@ public class SshServerBackgroundService : BackgroundService
 
     private void OnUserAuth(Session session, UserauthArgs e)
     {
+        _logger.LogWarning("UserAuth invoked. Username: {Username}, KeyAlgorithm: {KeyAlgorithm}, Fingerprint: {Fingerprint}, HasKey: {HasKey}", 
+            e.Username, e.KeyAlgorithm, e.Fingerprint, e.Key != null);
+
         // User는 항상 'git' 이어야 함
         if (e.Username != "git")
         {
@@ -188,7 +191,7 @@ public class SshServerBackgroundService : BackgroundService
             return;
         }
 
-        string cmd = e.CommandText.Trim();
+        string cmd = e.CommandText?.Trim() ?? string.Empty;
 
         // 1. 'ssh -T' 명령(단순 진단 접속) 처리
         if (string.IsNullOrEmpty(cmd))

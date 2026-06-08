@@ -2,6 +2,7 @@
 @page "/{username}/{repoName}/tree/{branch}"
 @page "/{username}/{repoName}/tree/{branch}/{*path}"
 @using Microsoft.JSInterop
+@using Microsoft.EntityFrameworkCore
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
 @inject Aristokeides.Api.Services.GitBrowserService GitService
@@ -9,8 +10,24 @@
 @inject NavigationManager NavManager
 @inject Aristokeides.Api.Services.Ssh.SshUrlHelper SshUrlHelper
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject Aristokeides.Api.Data.AppDbContext DbContext
 
 <PageTitle>@RepoName - Aristokeides</PageTitle>
+
+@if (string.IsNullOrEmpty(errorMessage))
+{
+    <div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">@Username / @RepoName</h1>
+        <div style="margin-top: 16px; display: flex; gap: 16px;">
+            <a href="/@Username/@RepoName" style="color: var(--accent, #2563eb); text-decoration: none; font-weight: 500; border-bottom: 2px solid var(--accent, #2563eb); padding-bottom: 4px;">Code</a>
+            <a href="/@Username/@RepoName/issues" style="color: #4b5563; text-decoration: none;">Issues</a>
+            @if (isOwner)
+            {
+                <a href="/@Username/@RepoName/settings" style="color: #4b5563; text-decoration: none;">Settings</a>
+            }
+        </div>
+    </div>
+}
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -45,6 +62,18 @@ else if (isEmptyRepo)
 git remote add origin @CurrentCloneUrl
 git push -u origin main
         </pre>
+
+        @if (activeProtocol == "SSH")
+        {
+            <div style="background-color: #eff6ff; color: #1e3a8a; padding: 12px; border-radius: 6px; margin-top: 16px; border: 1px solid #bfdbfe; text-align: left; display: inline-block; max-width: 600px;">
+                <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 4px; margin-top: 0;">💡 커스텀 SSH 키를 사용하시나요?</h4>
+                <p style="font-size: 12px; margin: 0;">
+                    기본 키(<code style="background: #dbeafe; padding: 1px 3px; border-radius: 3px;">id_rsa</code> 등)가 아닌 경우 인증에 실패하여 패스워드를 요구할 수 있습니다.
+                    다음 명령어로 키를 명시적으로 지정하세요:
+                </p>
+                <pre style="background: #1e3a8a; color: #eff6ff; padding: 8px; border-radius: 4px; margin-top: 8px; margin-bottom: 0; font-size: 11px;">GIT_SSH_COMMAND="ssh -i ~/.ssh/my_custom_key" git push -u origin main</pre>
+            </div>
+        }
     </div>
 }
 else
@@ -62,19 +91,27 @@ else
             </span>
         </div>
 
-        <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); padding: 4px; border-radius: 4px; border: 1px solid #e5e7eb;">
-            <button type="button" @onclick='() => SetProtocol("HTTP")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "HTTP" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "HTTP" ? "white" : "inherit");">HTTP</button>
-            <button type="button" @onclick='() => SetProtocol("SSH")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "SSH" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "SSH" ? "white" : "inherit");">SSH</button>
-            <span style="font-family: monospace; font-size: 13px; padding: 4px 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; min-width: 250px;">
-                @CurrentCloneUrl
-            </span>
-            <button type="button" @onclick="CopyUrlToClipboard" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e7eb; background: white; cursor: pointer; position: relative;">
-                📋
-                @if (isCopied)
-                {
-                    <span style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px;">Copied!</span>
-                }
-            </button>
+        <div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); padding: 4px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                <button type="button" @onclick='() => SetProtocol("HTTP")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "HTTP" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "HTTP" ? "white" : "inherit");">HTTP</button>
+                <button type="button" @onclick='() => SetProtocol("SSH")' style="padding: 4px 8px; border-radius: 4px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: @(activeProtocol == "SSH" ? "var(--accent)" : "transparent"); color: @(activeProtocol == "SSH" ? "white" : "inherit");">SSH</button>
+                <span style="font-family: monospace; font-size: 13px; padding: 4px 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; min-width: 250px;">
+                    @CurrentCloneUrl
+                </span>
+                <button type="button" @onclick="CopyUrlToClipboard" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e7eb; background: white; cursor: pointer; position: relative;">
+                    📋
+                    @if (isCopied)
+                    {
+                        <span style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px;">Copied!</span>
+                    }
+                </button>
+            </div>
+            @if (activeProtocol == "SSH")
+            {
+                <div style="font-size: 11px; color: #6b7280; margin-top: 4px; text-align: right;">
+                    커스텀 키 사용 시 <code style="background: #f3f4f6; padding: 1px 3px; border-radius: 2px;">GIT_SSH_COMMAND="ssh -i /path/to/key"</code> 환경변수 필요
+                </div>
+            }
         </div>
     </div>
 
@@ -135,6 +172,7 @@ else
 
     private string errorMessage = "";
     private bool isEmptyRepo = false;
+    private bool isOwner = false;
     private List<string> branches = new();
     private List<Aristokeides.Api.Services.GitTreeEntry> entries = new();
     private string? repoPath;
@@ -195,6 +233,10 @@ else
 
         try
         {
+            var repository = await DbContext.Repositories
+                .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+            isOwner = repository?.OwnerId == userId;
+
             branches = GitService.GetBranches(repoPath);
             if (!branches.Any())
             {

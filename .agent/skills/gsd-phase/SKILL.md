@@ -26,10 +26,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/add-phase.md
-@~/.gemini/antigravity/get-shit-done/workflows/insert-phase.md
-@~/.gemini/antigravity/get-shit-done/workflows/remove-phase.md
-@~/.gemini/antigravity/get-shit-done/workflows/edit-phase.md
+@~/.gemini/antigravity/gsd-core/workflows/add-phase.md
+@~/.gemini/antigravity/gsd-core/workflows/insert-phase.md
+@~/.gemini/antigravity/gsd-core/workflows/remove-phase.md
+@~/.gemini/antigravity/gsd-core/workflows/edit-phase.md
 </execution_context>
 
 <context>

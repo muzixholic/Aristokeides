@@ -195,6 +195,96 @@ namespace Aristokeides.Api.Migrations
                     b.ToTable("PullRequests");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Body")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PullRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("State")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("PullRequestId");
+
+                    b.ToTable("PullRequestReviews");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReviewComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiffHunk")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<bool>("IsOutdated")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPending")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LineType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("NewLineNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("OldLineNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PullRequestId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("PullRequestId");
+
+                    b.ToTable("PullRequestReviewComments");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.Repository", b =>
                 {
                     b.Property<Guid>("Id")
@@ -207,6 +297,9 @@ namespace Aristokeides.Api.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsPrivate")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -215,6 +308,9 @@ namespace Aristokeides.Api.Migrations
                     b.Property<int>("OwnerId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PrimaryLanguage")
+                        .HasColumnType("text");
+
                     b.Property<bool>("RequireSignedCommits")
                         .HasColumnType("boolean");
 
@@ -222,6 +318,9 @@ namespace Aristokeides.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -402,6 +501,51 @@ namespace Aristokeides.Api.Migrations
                     b.Navigation("Issue");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReview", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.PullRequest", "PullRequest")
+                        .WithMany()
+                        .HasForeignKey("PullRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("PullRequest");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReviewComment", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.PullRequestReviewComment", "Parent")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Aristokeides.Api.Models.PullRequest", "PullRequest")
+                        .WithMany()
+                        .HasForeignKey("PullRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("PullRequest");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.Repository", b =>
                 {
                     b.HasOne("Aristokeides.Api.Models.User", "Owner")
@@ -434,6 +578,11 @@ namespace Aristokeides.Api.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("PullRequest");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReviewComment", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.Repository", b =>

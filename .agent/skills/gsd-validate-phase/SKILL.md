@@ -13,7 +13,7 @@ Output: updated VALIDATION.md + generated test files.
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/validate-phase.md
+@~/.gemini/antigravity/gsd-core/workflows/validate-phase.md
 </execution_context>
 
 <context>

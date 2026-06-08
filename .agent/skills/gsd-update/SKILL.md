@@ -17,7 +17,7 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/update.md
+@~/.gemini/antigravity/gsd-core/workflows/update.md
 </execution_context>
 
 <flags>
@@ -35,6 +35,6 @@ Parse the first token of $ARGUMENTS:
 </process>
 
 <execution_context_extended>
-@~/.gemini/antigravity/get-shit-done/workflows/sync-skills.md
-@~/.gemini/antigravity/get-shit-done/workflows/reapply-patches.md
+@~/.gemini/antigravity/gsd-core/workflows/sync-skills.md
+@~/.gemini/antigravity/gsd-core/workflows/reapply-patches.md
 </execution_context_extended>

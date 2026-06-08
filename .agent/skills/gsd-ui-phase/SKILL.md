@@ -10,8 +10,8 @@ Flow: Validate → Research UI → Verify UI-SPEC → Done
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/ui-phase.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/workflows/ui-phase.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

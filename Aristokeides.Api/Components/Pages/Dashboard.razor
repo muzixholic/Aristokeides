@@ -1,0 +1,213 @@
+@page "/dashboard"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>내 대시보드 - Aristokeides</PageTitle>
+
+<div style="max-width: 1200px; margin: 0 auto; padding: 32px 24px;">
+    <!-- Dashboard Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+        <div>
+            <h1 style="font-size: 32px; font-weight: 700; color: #111827; margin: 0;">대시보드</h1>
+            <p style="color: #6b7280; font-size: 14px; margin: 4px 0 0 0;">회원님의 Git 저장소 및 프로젝트 상태를 한눈에 파악하세요.</p>
+        </div>
+        <a href="/repositories/new" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--accent); color: white; border-radius: 6px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s; text-decoration: none;">
+            <i class="bi bi-plus-lg"></i> 새 저장소 만들기
+        </a>
+    </div>
+
+    @if (isLoading)
+    {
+        <div style="padding: 64px 0; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>저장소 목록을 불러오는 중...</div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 16px; border-radius: 8px; border: 1px solid #fca5a5; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">대시보드를 불러올 수 없습니다</h3>
+            <p style="margin: 0; font-size: 14px;">@errorMessage</p>
+        </div>
+    }
+    else if (repositories == null || repositories.Count == 0)
+    {
+        <!-- Empty State -->
+        <div style="padding: 64px 24px; text-align: center; background: var(--secondary); border: 1px dashed #e5e7eb; border-radius: 12px;">
+            <div style="font-size: 48px; color: #9ca3af; margin-bottom: 16px;">
+                <i class="bi bi-folder-x"></i>
+            </div>
+            <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin: 0 0 8px 0;">생성된 저장소가 없습니다</h2>
+            <p style="color: #6b7280; font-size: 14px; max-width: 400px; margin: 0 auto 24px; line-height: 1.5;">
+                아직 저장소를 생성하지 않았습니다. "새 저장소 만들기" 버튼을 눌러 시작해 보세요.
+            </p>
+            <a href="/repositories/new" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--accent); color: white; border-radius: 6px; font-weight: 600; font-size: 14px; text-decoration: none;">
+                <i class="bi bi-plus-lg"></i> 첫 저장소 만들기
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Repository Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            @foreach (var repo in repositories)
+            {
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; min-height: 160px; transition: transform 0.2s, box-shadow 0.2s;" class="repo-card">
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">
+                                @if (repo.IsPrivate)
+                                {
+                                    <i class="bi bi-lock-fill" style="font-size: 11px;"></i> @("Private")
+                                }
+                                else
+                                {
+                                    <i class="bi bi-globe" style="font-size: 11px;"></i> @("Public")
+                                }
+                            </span>
+                            <span style="font-size: 12px; color: #9ca3af;">@repo.Status</span>
+                        </div>
+                        
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; line-height: 1.3;">
+                            <a href="/@repo.Owner?.Username/@repo.Name" style="color: #111827; text-decoration: none;" class="repo-link">
+                                @repo.Owner?.Username / @repo.Name
+                            </a>
+                        </h3>
+                        
+                        <p style="color: #4b5563; font-size: 13px; margin: 0 0 16px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 36px;">
+                            @(string.IsNullOrWhiteSpace(repo.Description) ? "설명이 없는 저장소입니다." : repo.Description)
+                        </p>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f3f4f6; padding-top: 12px; font-size: 12px; color: #6b7280;">
+                        <span style="display: inline-flex; align-items: center; gap: 6px;">
+                            @if (!string.IsNullOrEmpty(repo.PrimaryLanguage))
+                            {
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: @GetLanguageColor(repo.PrimaryLanguage);"></span>
+                                <span>@repo.PrimaryLanguage</span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #9ca3af;"></span>
+                                <span>Unknown</span>
+                            }
+                        </span>
+                        <span>
+                            <i class="bi bi-clock-history"></i> @FormatRelativeTime(repo.UpdatedAt)
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .repo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        border-color: #bfdbfe !important;
+    }
+    .repo-link:hover {
+        color: var(--accent) !important;
+        text-decoration: underline !important;
+    }
+</style>
+
+@code {
+    private List<Repository>? repositories;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private int userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var id))
+                {
+                    userId = id;
+                    repositories = await DbContext.Repositories
+                        .Include(r => r.Owner)
+                        .Where(r => r.OwnerId == userId)
+                        .OrderByDescending(r => r.UpdatedAt)
+                        .ToListAsync();
+                }
+                else
+                {
+                    errorMessage = "사용자 인증 정보를 식별할 수 없습니다.";
+                }
+            }
+            else
+            {
+                errorMessage = "대시보드를 보려면 로그인이 필요합니다.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "대시보드를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요. (" + ex.Message + ")";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetLanguageColor(string language)
+    {
+        return language.ToLower() switch
+        {
+            "c#" => "#178600",
+            "html" => "#e34c26",
+            "css" => "#563d7c",
+            "javascript" => "#f1e05a",
+            "typescript" => "#3178c6",
+            "python" => "#3572A5",
+            "go" => "#00ADD8",
+            "rust" => "#dea584",
+            "java" => "#b07219",
+            _ => "#9ca3af"
+        };
+    }
+
+    private string FormatRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan.TotalDays > 30)
+        {
+            return dateTime.ToLocalTime().ToString("yyyy-MM-dd");
+        }
+        if (timeSpan.TotalDays >= 1)
+        {
+            return $"{(int)timeSpan.TotalDays}일 전";
+        }
+        if (timeSpan.TotalHours >= 1)
+        {
+            return $"{(int)timeSpan.TotalHours}시간 전";
+        }
+        if (timeSpan.TotalMinutes >= 1)
+        {
+            return $"{(int)timeSpan.TotalMinutes}분 전";
+        }
+        return "방금 전";
+    }
+}

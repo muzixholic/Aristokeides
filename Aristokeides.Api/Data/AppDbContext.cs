@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<IssueComment> IssueComments => Set<IssueComment>();
     public DbSet<SshKey> SshKeys => Set<SshKey>();
     public DbSet<CommitSignature> CommitSignatures => Set<CommitSignature>();
+    public DbSet<PullRequestReviewComment> PullRequestReviewComments => Set<PullRequestReviewComment>();
+    public DbSet<PullRequestReview> PullRequestReviews => Set<PullRequestReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -129,6 +131,37 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(cs => cs.SignerUserId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PullRequestReviewComment>(entity =>
+        {
+            entity.HasOne(c => c.PullRequest)
+                  .WithMany()
+                  .HasForeignKey(c => c.PullRequestId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Author)
+                  .WithMany()
+                  .HasForeignKey(c => c.AuthorId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(c => c.Parent)
+                  .WithMany(p => p.Replies)
+                  .HasForeignKey(c => c.ParentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PullRequestReview>(entity =>
+        {
+            entity.HasOne(r => r.PullRequest)
+                  .WithMany()
+                  .HasForeignKey(r => r.PullRequestId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Author)
+                  .WithMany()
+                  .HasForeignKey(r => r.AuthorId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

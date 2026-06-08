@@ -19,11 +19,11 @@ Brownfield equivalent of new-project. Project exists, PROJECT.md has history. Ga
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/new-milestone.md
-@~/.gemini/antigravity/get-shit-done/references/questioning.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
-@~/.gemini/antigravity/get-shit-done/templates/project.md
-@~/.gemini/antigravity/get-shit-done/templates/requirements.md
+@~/.gemini/antigravity/gsd-core/workflows/new-milestone.md
+@~/.gemini/antigravity/gsd-core/references/questioning.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/templates/project.md
+@~/.gemini/antigravity/gsd-core/templates/requirements.md
 </execution_context>
 
 <context>

@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Aristokeides.Api.Data;
+using Aristokeides.Api.Services;
 using FxSsh.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Aristokeides.Api.Services.Ssh;
@@ -165,8 +167,13 @@ public class SshCommandBridge
 
                                         if (oldOid != newOid)
                                         {
-                                            _logger.LogInformation("SSH Push detected: ref {Ref} changed from {Old} to {New}. Verifying signatures...", r.CanonicalName, oldOid, newOid);
+                                            _logger.LogInformation("SSH Push detected: ref {Ref} changed from {Old} to {New}. Verifying signatures & post-push processing...", r.CanonicalName, oldOid, newOid);
                                             await _signatureVerificationService.VerifyNewCommitsAsync(physicalRepoPath, oldOid, newOid, repository.Id);
+
+                                            // PullRequestService 후처리 호출
+                                            var prService = scope.ServiceProvider.GetRequiredService<PullRequestService>();
+                                            var branchName = r.CanonicalName.Substring("refs/heads/".Length);
+                                            await prService.OnBranchPushedAsync(repository.Id, branchName, oldOid, newOid);
                                         }
                                     }
                                 }

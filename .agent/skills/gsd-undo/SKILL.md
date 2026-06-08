@@ -14,9 +14,9 @@ Three modes:
 </objective>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/undo.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
-@~/.gemini/antigravity/get-shit-done/references/gate-prompts.md
+@~/.gemini/antigravity/gsd-core/workflows/undo.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/references/gate-prompts.md
 </execution_context>
 
 <context>

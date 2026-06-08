@@ -2,17 +2,25 @@
 
 <div class="page">
     <div class="navbar">
-        <a href="/">Aristokeides</a>
-        <div>
+        <div class="nav-left">
+            <a href="/" style="font-weight: 600; font-size: 1.25rem;">Aristokeides</a>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">대시보드</NavLink>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+        <div class="nav-right">
             <AuthorizeView>
                 <Authorized>
                     <span>@context.User.Identity?.Name 님</span>
-                    <a href="/settings" style="margin-left: 16px;">설정</a>
-                    <a href="/api/auth/logout" style="margin-left: 16px;">로그아웃</a>
+                    <NavLink class="btn-nav-accent" href="/repositories/new">새 저장소 만들기</NavLink>
+                    <NavLink class="nav-link" href="/settings">설정</NavLink>
+                    <a class="nav-link" href="/api/auth/logout">로그아웃</a>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login">로그인</a>
-                    <a href="/register" style="margin-left: 16px;">회원가입</a>
+                    <NavLink class="nav-link" href="/login">로그인</NavLink>
+                    <NavLink class="nav-link" href="/register">회원가입</NavLink>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
@@ -21,4 +29,12 @@
     <main class="main-content">
         @Body
     </main>
+
+    <footer class="footer">
+        <div>&copy; @DateTime.Now.Year Aristokeides. All rights reserved.</div>
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/swagger">Swagger API</a>
+        </div>
+    </footer>
 </div>

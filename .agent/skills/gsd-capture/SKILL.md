@@ -28,12 +28,12 @@ Mode routing:
 </routing>
 
 <execution_context>
-@~/.gemini/antigravity/get-shit-done/workflows/add-todo.md
-@~/.gemini/antigravity/get-shit-done/workflows/note.md
-@~/.gemini/antigravity/get-shit-done/workflows/add-backlog.md
-@~/.gemini/antigravity/get-shit-done/workflows/plant-seed.md
-@~/.gemini/antigravity/get-shit-done/workflows/check-todos.md
-@~/.gemini/antigravity/get-shit-done/references/ui-brand.md
+@~/.gemini/antigravity/gsd-core/workflows/add-todo.md
+@~/.gemini/antigravity/gsd-core/workflows/note.md
+@~/.gemini/antigravity/gsd-core/workflows/add-backlog.md
+@~/.gemini/antigravity/gsd-core/workflows/plant-seed.md
+@~/.gemini/antigravity/gsd-core/workflows/check-todos.md
+@~/.gemini/antigravity/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

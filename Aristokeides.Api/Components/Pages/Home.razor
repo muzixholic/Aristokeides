@@ -1,0 +1,60 @@
+@page "/home"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+<PageTitle>Aristokeides - Lightweight Git Platform</PageTitle>
+
+<div class="landing-container" style="max-width: 1000px; margin: 40px auto; padding: 24px; text-align: center;">
+    <div style="margin-bottom: 48px;">
+        <h1 style="font-size: 3.5rem; font-weight: 800; color: #111827; margin-bottom: 16px; letter-spacing: -0.025em;">
+            Aristokeides
+        </h1>
+        <p style="font-size: 1.25rem; color: #4b5563; max-width: 600px; margin: 0 auto 32px; line-height: 1.75;">
+            C# 및 .NET 기반의 초고속 성능을 탑재한 경량화 Git 저장소 호스팅 및 협업 플랫폼
+        </p>
+        <div style="display: flex; gap: 16px; justify-content: center;">
+            <a href="/register" style="display: inline-block; padding: 12px 24px; background: var(--accent); color: white; font-weight: 600; border-radius: 6px; font-size: 1rem; transition: background-color 0.2s;">
+                시작하기 (무료 회원가입)
+            </a>
+            <a href="/login" style="display: inline-block; padding: 12px 24px; background: var(--secondary); color: #374151; font-weight: 600; border-radius: 6px; font-size: 1rem; transition: background-color 0.2s;">
+                로그인
+            </a>
+        </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 64px 0;" />
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; text-align: left;">
+        <!-- Git Hosting -->
+        <div style="padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: var(--accent); margin-bottom: 20px; font-size: 1.5rem;">
+                <i class="bi bi-git"></i>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin-top: 0; margin-bottom: 8px;">Git 저장소 호스팅</h3>
+            <p style="color: #4b5563; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                HTTP 및 SSH 프로토콜 지원으로 언제 어디서나 안전하고 빠른 코드 푸시/풀이 가능합니다.
+            </p>
+        </div>
+
+        <!-- Issue Tracker -->
+        <div style="padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: var(--accent); margin-bottom: 20px; font-size: 1.5rem;">
+                <i class="bi bi-exclamation-circle"></i>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin-top: 0; margin-bottom: 8px;">이슈 트래커</h3>
+            <p style="color: #4b5563; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                할 일 목록, 버그 추적, 칸반 보드 기능을 통해 프로젝트 진행 상황을 한눈에 관리하세요.
+            </p>
+        </div>
+
+        <!-- Code Review -->
+        <div style="padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: var(--accent); margin-bottom: 20px; font-size: 1.5rem;">
+                <i class="bi bi-code-square"></i>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin-top: 0; margin-bottom: 8px;">풀 리퀘스트 & 코드 리뷰</h3>
+            <p style="color: #4b5563; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                브랜치 병합 요청, 인라인 코드 리뷰 및 토론, 서명 검증을 통한 신뢰성 있는 협업을 경험해 보세요.
+            </p>
+        </div>
+    </div>
+</div>

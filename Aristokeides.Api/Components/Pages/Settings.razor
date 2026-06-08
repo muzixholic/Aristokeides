@@ -68,6 +68,16 @@
 
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
 
+            <div style="background-color: #eff6ff; color: #1e3a8a; padding: 16px; border-radius: 6px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">💡 SSH Configuration Tip</h3>
+                <p style="font-size: 13px; margin: 0 0 8px 0; line-height: 1.5;">
+                    If you are using a custom SSH key (not <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_rsa</code> or <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_ed25519</code>), your SSH client will not automatically offer it to the server. If this happens, FxSsh will incorrectly prompt for a password, and the connection will fail with <strong>Permission denied</strong>.
+                </p>
+                <p style="font-size: 13px; margin: 0; line-height: 1.5;">
+                    To fix this, either use the <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">-i</code> flag (e.g., <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">ssh -i ~/.ssh/my_custom_key -T git@localhost -p 2222</code>) or add an entry for this host in your <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">~/.ssh/config</code> file specifying the <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">IdentityFile</code>.
+                </p>
+            </div>
+
             <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Your SSH Keys</h2>
 
             @if (isLoadingKeys)
