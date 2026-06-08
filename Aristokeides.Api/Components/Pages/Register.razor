@@ -1,0 +1,75 @@
+@page "/register"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+<PageTitle>회원가입</PageTitle>
+
+<div style="max-width: 400px; margin: 40px auto; padding: 24px; background: var(--dominant); border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">
+    <h2 style="margin-top: 0; margin-bottom: 24px;">회원가입</h2>
+
+    @if (Error == "duplicate_email")
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #fca5a5;">
+            이미 등록된 이메일입니다.
+        </div>
+    }
+    else if (Error == "duplicate_username")
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #fca5a5;">
+            이미 등록된 사용자명입니다.
+        </div>
+    }
+
+    <div id="password-mismatch-error" style="display: none; background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #fca5a5;">
+        비밀번호가 일치하지 않습니다.
+    </div>
+
+    <form method="post" action="/api/auth/cookie-register">
+        <AntiforgeryToken />
+        
+        <div style="margin-bottom: 16px;">
+            <label for="email" style="display: block; font-weight: 600; margin-bottom: 4px;">이메일</label>
+            <input type="email" id="email" name="email" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <label for="username" style="display: block; font-weight: 600; margin-bottom: 4px;">사용자명</label>
+            <input type="text" id="username" name="username" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+            <label for="password" style="display: block; font-weight: 600; margin-bottom: 4px;">비밀번호</label>
+            <input type="password" id="password" name="password" required minlength="6" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label for="passwordConfirm" style="display: block; font-weight: 600; margin-bottom: 4px;">비밀번호 확인</label>
+            <input type="password" id="passwordConfirm" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+            회원가입
+        </button>
+    </form>
+
+    <p style="text-align: center; margin-top: 16px; color: #6b7280; font-size: 14px;">
+        이미 계정이 있으신가요? <a href="/login" style="color: var(--accent); text-decoration: none;">로그인</a>
+    </p>
+</div>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var pw = document.getElementById('password').value;
+        var confirm = document.getElementById('passwordConfirm').value;
+        if (pw !== confirm) {
+            e.preventDefault();
+            document.getElementById('password-mismatch-error').style.display = 'block';
+        } else {
+            document.getElementById('password-mismatch-error').style.display = 'none';
+        }
+    });
+</script>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+}

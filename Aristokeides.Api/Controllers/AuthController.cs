@@ -85,6 +85,31 @@ public class AuthController : ControllerBase
         return Redirect("/");
     }
 
+    [HttpPost("cookie-register")]
+    public async Task<IActionResult> CookieRegister(
+        [FromForm] string email,
+        [FromForm] string username,
+        [FromForm] string password)
+    {
+        if (await _db.Users.AnyAsync(u => u.Email == email))
+            return Redirect("/register?error=duplicate_email");
+
+        if (await _db.Users.AnyAsync(u => u.Username == username))
+            return Redirect("/register?error=duplicate_username");
+
+        var user = new User
+        {
+            Email = email,
+            Username = username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            Role = "Reader"
+        };
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        return Redirect("/login?registered=true");
+    }
+
     [HttpGet("logout")]
     public async Task<IActionResult> Logout()
     {
