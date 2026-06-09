@@ -1,6 +1,6 @@
 # Aristokeides (아리스토케이데스)
 
-C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Git 저장소 호스팅 및 프로젝트 관리 시스템**입니다. GitLab이나 Gitea와 유사한 핵심 협업 기능(Git HTTP/SSH 호스팅, 이슈 트래커, 칸반 보드, 풀 리퀘스트 및 코드 리뷰)을 독립적이고 가볍게 제공하는 것을 목표로 합니다.
+C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Git 저장소 호스팅 및 프로젝트 관리 시스템**입니다. GitLab이나 Gitea와 유사한 핵심 협업 기능(Git HTTP/SSH 호스팅, 이슈 트래커, 칸반 보드, 풀 리퀘스트 및 코드 리뷰)을 독립적이고 가볍게 제공하는 것을 목표로 합니다.
 
 ---
 
@@ -48,13 +48,25 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 - **설정 및 안전한 삭제**: 기존 저장소의 이름, 설명, 비공개 여부 등을 웹에서 즉시 수정할 수 있으며, 이중 확인 모달을 통해 물리적인 Git 저장소와 데이터베이스를 일괄적으로 안전하게 영구 삭제할 수 있습니다.
 - **통합 네비게이션**: 글로벌 네비게이션 바와 푸터를 통해 시스템 내 어느 페이지에서든 주요 기능으로 쉽게 이동할 수 있는 일관된 UI/UX를 제공합니다.
 
+### 8. 다중 데이터베이스 지원 (Multi-Database)
+- 시스템 환경에 맞춰 **SQLite, PostgreSQL, MySQL** 중 원하는 데이터베이스를 선택하여 사용할 수 있습니다.
+- 소규모 팀이나 개인 용도로는 별도의 서버 구성이 필요 없는 SQLite를, 대규모 또는 엔터프라이즈 환경에서는 PostgreSQL이나 MySQL을 선택하여 유연하게 대처할 수 있습니다.
+
+### 9. 최초 설치 마법사 (Setup Wizard) & 시스템 설정
+- 최초 실행 시 자동으로 나타나는 웹 기반 설치 마법사(`/setup`)를 통해 직관적으로 데이터베이스를 연결하고 초기 관리자(Admin) 계정을 생성할 수 있습니다.
+- 관리자 권한을 가진 사용자는 웹 UI 내에서 전역 시스템 설정(Admin Settings)을 확인하고 조정할 수 있습니다.
+
+### 10. Docker 및 배포 환경 (Docker Deployment)
+- 애플리케이션 이미지 빌드를 위한 최적화된 `Dockerfile`과 서비스 구동을 위한 `docker-compose.yml`이 제공됩니다.
+- 볼륨 마운트를 통한 데이터 영속성 유지 및 컨테이너 기반 배포를 완벽히 지원하여 손쉽게 호스팅 환경을 구성할 수 있습니다.
+
 ---
 
 ## 🛠 기술 스택
 
-- **Backend**: C# / .NET 9.0 (ASP.NET Core)
+- **Backend**: C# / .NET 10.0 (ASP.NET Core)
 - **Frontend**: Blazor Server (Interactive Server Render Mode), Vanilla CSS
-- **Database**: PostgreSQL (Entity Framework Core ORM)
+- **Database**: Entity Framework Core (SQLite, PostgreSQL, MySQL 다중 지원)
 - **Git Engine**: LibGit2Sharp 연동 및 Git Smart HTTP 프로토콜 수동 파싱
 - **SSH Engine**: `FxSsh` 기반 임베디드 SSH 서버 (ECDsa 호스트 키 알고리즘 적용 및 백그라운드 호스팅)
 - **API Doc**: Swagger UI (JWT Bearer Security 정의 적용)
@@ -64,52 +76,53 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 ## 📂 주요 코드 구조
 
 - **진입점 및 미들웨어**:
-  - [Program.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Program.cs): 애플리케이션 파이프라인, DI 컨테이너 및 미들웨어 등록
-  - [GitSmartHttpMiddleware.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Middleware/GitSmartHttpMiddleware.cs): Git CLI HTTP 요청 처리 미들웨어
+  - [Program.cs](./Aristokeides.Api/Program.cs): 애플리케이션 파이프라인, DI 컨테이너 및 미들웨어 등록
+  - [GitSmartHttpMiddleware.cs](./Aristokeides.Api/Middleware/GitSmartHttpMiddleware.cs): Git CLI HTTP 요청 처리 미들웨어
 - **SSH 서버 및 연결 중계**:
-  - [SshServerBackgroundService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs): `FxSsh` 엔진 구동 및 세션 관리 백그라운드 서비스
-  - [SshCommandBridge.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshCommandBridge.cs): 일반 셸 제한 및 Git SSH 명령어 실행/비동기 스트림 파이핑 중계
-  - [SshKeyParser.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshKeyParser.cs): 공개키 유효성 분석 및 지문 생성 도구
-  - [SshFingerprintCalculator.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshFingerprintCalculator.cs): SHA-256 지문 계산 유틸리티
-  - [SshSignatureVerificationService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshSignatureVerificationService.cs) & [SshSignatureVerifier.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/Ssh/SshSignatureVerifier.cs): SSH 키 기반 커밋 디지털 서명 분석 및 검증 처리기
+  - [SshServerBackgroundService.cs](./Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs): `FxSsh` 엔진 구동 및 세션 관리 백그라운드 서비스
+  - [SshCommandBridge.cs](./Aristokeides.Api/Services/Ssh/SshCommandBridge.cs): 일반 셸 제한 및 Git SSH 명령어 실행/비동기 스트림 파이핑 중계
+  - [SshKeyParser.cs](./Aristokeides.Api/Services/Ssh/SshKeyParser.cs): 공개키 유효성 분석 및 지문 생성 도구
+  - [SshFingerprintCalculator.cs](./Aristokeides.Api/Services/Ssh/SshFingerprintCalculator.cs): SHA-256 지문 계산 유틸리티
+  - [SshSignatureVerificationService.cs](./Aristokeides.Api/Services/Ssh/SshSignatureVerificationService.cs) & [SshSignatureVerifier.cs](./Aristokeides.Api/Services/Ssh/SshSignatureVerifier.cs): SSH 키 기반 커밋 디지털 서명 분석 및 검증 처리기
 - **비즈니스 서비스**:
-  - [GitBrowserService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/GitBrowserService.cs): Git 저장소 데이터(커밋, 브랜치, 파일) 조회 서비스
-  - [IssueService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/IssueService.cs): 이슈 상태 제어 및 칸반 정렬 서비스
-  - [PullRequestService.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Services/PullRequestService.cs): PR 생성, Diff 분석 및 병합 처리, 일괄 리뷰 제출, 커밋 푸시 후처리(라인 보정 및 승인 초기화) 서비스
+  - [GitBrowserService.cs](./Aristokeides.Api/Services/GitBrowserService.cs): Git 저장소 데이터(커밋, 브랜치, 파일) 조회 서비스
+  - [IssueService.cs](./Aristokeides.Api/Services/IssueService.cs): 이슈 상태 제어 및 칸반 정렬 서비스
+  - [PullRequestService.cs](./Aristokeides.Api/Services/PullRequestService.cs): PR 생성, Diff 분석 및 병합 처리, 일괄 리뷰 제출, 커밋 푸시 후처리(라인 보정 및 승인 초기화) 서비스
 - **데이터 레이어**:
-  - [AppDbContext.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Data/AppDbContext.cs): PostgreSQL 연결 및 엔티티 매핑 관계 설정 (EF Core)
-  - [Models/PullRequestReview.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models/PullRequestReview.cs): PR 리뷰 상태 저장 엔티티 모델 (신규)
-  - [Models/PullRequestReviewComment.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models/PullRequestReviewComment.cs): PR 라인별 인라인 댓글/답글 저장 모델
-  - [Models/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Models): User, Repository, Issue, PullRequest, SshKey, CommitSignature 등 주요 도메인 모델 정의
+  - [AppDbContext.cs](./Aristokeides.Api/Data/AppDbContext.cs): PostgreSQL 연결 및 엔티티 매핑 관계 설정 (EF Core)
+  - [Models/PullRequestReview.cs](./Aristokeides.Api/Models/PullRequestReview.cs): PR 리뷰 상태 저장 엔티티 모델 (신규)
+  - [Models/PullRequestReviewComment.cs](./Aristokeides.Api/Models/PullRequestReviewComment.cs): PR 라인별 인라인 댓글/답글 저장 모델
+  - [Models/](./Aristokeides.Api/Models): User, Repository, Issue, PullRequest, SshKey, CommitSignature 등 주요 도메인 모델 정의
 - **컨트롤러**:
-  - [SshKeysController.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Controllers/SshKeysController.cs): SSH 키 목록 조회, 등록, 삭제를 제공하는 API 컨트롤러
+  - [SshKeysController.cs](./Aristokeides.Api/Controllers/SshKeysController.cs): SSH 키 목록 조회, 등록, 삭제를 제공하는 API 컨트롤러
 - **사용자 인터페이스 (Blazor Components)**:
-  - [Components/Pages/](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages): 전체 화면 뷰 컴포넌트들
-    - [Home.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Home.razor) & [Dashboard.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Dashboard.razor) : 비로그인/로그인 세션 기반의 랜딩 페이지 및 저장소 목록 뷰
-    - [NewRepository.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/NewRepository.razor) & [RepositorySettings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepositorySettings.razor) : 웹 UI 기반의 신규 저장소 생성 및 설정 변경/삭제 페이지
-    - [Settings.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/Settings.razor) : 프로필 정보 및 SSH 키 등록/삭제를 지원하는 사용자 설정 화면
-    - [RepoBrowser.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoBrowser.razor) : HTTP/SSH 클론 URL 선택 및 파일 목록 표시
-    - [RepoPullRequestDetail.razor](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/Components/Pages/RepoPullRequestDetail.razor) : PR 코드 디프, 임시 댓글 작성 및 일괄 제출 UI, 머지 제어 및 관리자 우회 동의 UI
+  - [Components/Pages/](./Aristokeides.Api/Components/Pages): 전체 화면 뷰 컴포넌트들
+    - [Home.razor](./Aristokeides.Api/Components/Pages/Home.razor) & [Dashboard.razor](./Aristokeides.Api/Components/Pages/Dashboard.razor) : 비로그인/로그인 세션 기반의 랜딩 페이지 및 저장소 목록 뷰
+    - [NewRepository.razor](./Aristokeides.Api/Components/Pages/NewRepository.razor) & [RepositorySettings.razor](./Aristokeides.Api/Components/Pages/RepositorySettings.razor) : 웹 UI 기반의 신규 저장소 생성 및 설정 변경/삭제 페이지
+    - [Settings.razor](./Aristokeides.Api/Components/Pages/Settings.razor) : 프로필 정보 및 SSH 키 등록/삭제를 지원하는 사용자 설정 화면
+    - [RepoBrowser.razor](./Aristokeides.Api/Components/Pages/RepoBrowser.razor) : HTTP/SSH 클론 URL 선택 및 파일 목록 표시
+    - [RepoPullRequestDetail.razor](./Aristokeides.Api/Components/Pages/RepoPullRequestDetail.razor) : PR 코드 디프, 임시 댓글 작성 및 일괄 제출 UI, 머지 제어 및 관리자 우회 동의 UI
     - `RepoBlob.razor` (구문 강조 코드 뷰어), `RepoIssues.razor` (칸반 보드)
 - **단위 및 통합 테스트**:
-  - [AdvancedReviewTests.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Tests/Services/AdvancedReviewTests.cs): 일괄 리뷰 제출 및 병합 차단, 푸시 후처리 라인 보정 알고리즘 통합 검증 (신규)
-  - [PushHookIntegrationTests.cs](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Tests/PushHookIntegrationTests.cs) : Push 완료 후 서명 검증 테스트
+  - [AdvancedReviewTests.cs](./Aristokeides.Tests/Services/AdvancedReviewTests.cs): 일괄 리뷰 제출 및 병합 차단, 푸시 후처리 라인 보정 알고리즘 통합 검증 (신규)
+  - [PushHookIntegrationTests.cs](./Aristokeides.Tests/PushHookIntegrationTests.cs) : Push 완료 후 서명 검증 테스트
 
 ---
 
 ## ⚙️ 실행 방법
 
 ### 1. 전제 조건
-- .NET 9.0 SDK 설치
-- PostgreSQL 서버 구동 및 빈 데이터베이스 생성
+- .NET 10.0 SDK 설치
 - 시스템 경로에 `git` 실행 파일 등록 필요
+- (선택) PostgreSQL, MySQL 등 외부 데이터베이스 혹은 Docker 환경 준비 (SQLite 사용 시 기본 내장됨)
 
 ### 2. 설정 조정 (`appsettings.json`)
-[appsettings.json](file:///E:/Workspace/VisualC%23/Aristokeides/Aristokeides.Api/appsettings.json) 파일을 열어 PostgreSQL 데이터베이스 접속 정보, SSH 서버 설정 및 JWT 토큰 서명 키를 본인 환경에 맞게 입력합니다.
+웹 브라우저를 통해 실행되는 **최초 설치 마법사(Setup Wizard)**를 통해 손쉽게 DB 및 초기 계정을 구성할 수 있습니다. 혹은 [appsettings.json](./Aristokeides.Api/appsettings.json)을 직접 수정하여 DB 종류(`DatabaseProvider`)와 연결 문자열을 설정할 수도 있습니다.
 ```json
 {
+  "DatabaseProvider": "Sqlite",
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=aristokeides;Username=postgres;Password=postgres"
+    "DefaultConnection": "Data Source=aristokeides.db"
   },
   "Ssh": {
     "Port": 2222,
@@ -118,14 +131,14 @@ C# / .NET 9 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 Gi
 }
 ```
 
-### 3. 데이터베이스 마이그레이션 적용 및 실행
-애플리케이션이 구동될 때 자동으로 마이그레이션이 실행되도록 구현되어 있으나, 수동으로 마이그레이션을 적용하고 실행하려면 다음 명령어를 사용합니다.
+### 3. 애플리케이션 실행 및 마이그레이션 적용
+애플리케이션 구동 시 또는 Setup 완료 직후, 선택한 DB Provider에 맞춰 자동으로 마이그레이션이 실행됩니다. 직접 로컬 환경에서 실행하려면 다음 명령어를 사용합니다.
 
 ```powershell
-# API 프로젝트 디렉토리로 이동하여 마이그레이션 업데이트 및 실행
-dotnet ef database update --project Aristokeides.Api
+# API 프로젝트 실행
 dotnet run --project Aristokeides.Api
 ```
+(실행 후 `http://localhost:5000` 등으로 접속하면 초기 설치 화면이 나타납니다.)
 
 ### 4. SSH 연결 테스트 및 사용
 - **연결 확인**: 서버가 실행된 상태에서 다음 명령어를 실행하여 SSH 작동을 확인합니다.
