@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: 배포를 위한 작업
-status: completed
-stopped_at: v1.3 Milestone planned.
-last_updated: "2026-06-09T01:53:44.302Z"
-last_activity: 2026-06-09 — Milestone v1.3 completed and archived
+milestone: v1.4
+milestone_name: 웹훅, LFS, 조직 및 보안 기능 강화
+status: planning
+stopped_at: v1.4 Milestone planned.
+last_updated: "2026-06-09T21:37:00Z"
+last_activity: 2026-06-09 — Milestone v1.4 planned
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 4
+  total_plans: 0
   completed_plans: 0
   percent: 0
 ---
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
-**Status:** v1.3 milestone complete
-**Current focus:** v1.3 배포를 위한 작업 (Multi-DB, Setup Wizard, Docker)
-**Current Position:** Milestone v1.3 completely executed!
+**Status:** v1.4 milestone planned
+**Current focus:** 웹훅, LFS, 조직 및 보안 기능 강화
+**Current Position:** Milestone v1.4 planning complete
 
 ## Last Session
 
-**Stopped at:** v1.3 Milestone planned.
+**Stopped at:** v1.4 Milestone planned.
 **Resume file:** .planning/ROADMAP.md
 
 ## Decisions
@@ -49,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 ## Current Position
 
-Phase: Milestone v1.3 complete
+Phase: Milestone v1.4 planning
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-09 — Milestone v1.3 completed and archived
+Status: Planning completed. Awaiting first phase plan.
+Last activity: 2026-06-09 — Milestone v1.4 planned
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Start the first phase plan with /gsd-plan-phase 18

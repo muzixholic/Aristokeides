@@ -5,37 +5,30 @@
 - ✅ **v1.0 MVP** — (shipped)
 - ✅ **v1.1 SSH & Advanced Code Review** — (shipped)
 - ✅ **v1.2 Web UI Completion** — (shipped)
-- ✅ **v1.3 Deployment & Setup** — Phases 14-17 (shipped 2026-06-09)
+- ✅ **v1.3 Deployment & Setup** — (shipped 2026-06-09)
+- 📅 **v1.4 웹훅, LFS, 조직 및 보안 기능 강화** — Phases 18-21 (planned)
 
 ## Phases
 
-<details>
-<summary>✅ v1.3 배포를 위한 작업 (Phases 14-17) — SHIPPED 2026-06-09</summary>
+### Phase 18: 보안 및 인증 기능 강화
+- [ ] OAuth2 소셜 로그인 연동 (GitHub, Google 등)
+- [ ] TOTP 기반 2단계 인증(2FA) 활성화 및 다단계 인증 로그인 흐름 구현
+- [ ] 사용자별 활성 세션 목록 조회 및 세션 만료, 특정 기기 원격 로그아웃 구현
 
-### Phase 14: 멀티 데이터베이스 지원 기반 마련
-- [x] EF Core 설정 업데이트 및 다중 Provider(SQLite, Npgsql, Pomelo.EntityFrameworkCore.MySql) 패키지 추가
-- [x] `appsettings.json`을 통한 DB 종류 및 연결 문자열 주입 구조 구현
-- [x] 각 DB 종류별 Migration 파일 분리 또는 런타임 마이그레이션 적용 전략 수립
+### Phase 19: 조직 및 팀 기능
+- [ ] 조직(Organization) 엔티티 정의, 생성 및 프로필 설정 UI 추가
+- [ ] 조직 내 팀(Team) 생성 및 사용자 추가/제거 기능 구현
+- [ ] 조직 저장소에 대한 팀/개별 사용자 권한 설정 및 접근 제어(Read/Write/Admin) 적용
 
-### Phase 15: 최초 설치 관리자 (Setup Wizard) 구현
-- [x] 초기화 여부 판단 로직 구현 (설정 파일 유무 또는 Admin 사용자 유무 등)
-- [x] 미초기화 시 모든 요청을 `/setup`으로 리다이렉트하는 Middleware 구현
-- [x] `/setup` 웹 UI 구현 (DB 선택 및 정보 입력, 관리자 계정 생성 폼)
-- [x] Setup 완료 후 동적 DB 구성 및 초기 마이그레이션/시드 데이터 실행 로직 구현
+### Phase 20: Git LFS (Large File Storage) 지원
+- [ ] Git LFS API 규격(LFS Batch API, Locks API) 엔드포인트 구현
+- [ ] LFS 포인터 처리 및 대용량 바이너리 파일을 보관하는 로컬 스토리지 백엔드 연동
+- [ ] LFS 파일 업로드/다운로드 인증 구현 및 웹 UI에서 LFS 파일 감지/다운로드 처리
 
-### Phase 16: 관리자 설정 화면 추가
-- [x] Admin 권한 전용 시스템 설정 페이지 라우팅 및 UI 추가
-- [x] 현재 DB 설정 확인 및 변경 UI
-- [x] (옵션) 기타 시스템 기본 설정(도메인, SSH 포트 등) 관리 기능 확장 기반 마련
-
-### Phase 17: Docker/Podman 배포 환경 구축
-- [x] 애플리케이션 `Dockerfile` 작성 (멀티 스테이지 빌드, 경량화)
-- [x] `docker-compose.yml` 작성 (선택적 외부 DB 연결 예제 포함)
-- [x] 볼륨 마운트 설정(저장소 데이터, SQLite DB, 설정 파일 등 보존)
-- [x] 런타임 환경변수를 통한 초기 Admin 주입 스크립트 작성 (선택 사항)
-- [x] 컨테이너 실행 테스트 및 가이드라인 업데이트
-
-</details>
+### Phase 21: 웹훅 및 외부 연동
+- [ ] 저장소 이벤트 발생 시 웹훅 페이로드 전송 및 개별 저장소 웹훅 관리 기능 구현
+- [ ] 웹훅 전송 상세 기록(Delivery Log) 관리 및 수동 재전송(Redelivery) 기능 구현
+- [ ] 슬랙(Slack), 디스코드(Discord) 템플릿 연동 및 알림 기능 확장
 
 ## Previous Milestones
 
