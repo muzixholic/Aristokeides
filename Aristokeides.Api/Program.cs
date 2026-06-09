@@ -68,7 +68,24 @@ builder.Services.AddAuthentication(options =>
         return "Cookies";
     };
 })
-.AddScheme<AuthenticationSchemeOptions, Aristokeides.Api.Auth.BasicAuthenticationHandler>("Basic", null);
+.AddScheme<AuthenticationSchemeOptions, Aristokeides.Api.Auth.BasicAuthenticationHandler>("Basic", null)
+.AddGoogle(opts =>
+{
+    var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+    opts.ClientId = (string.IsNullOrEmpty(googleClientId) || googleClientId == "YOUR_GOOGLE_CLIENT_ID") ? "dummy" : googleClientId;
+    var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    opts.ClientSecret = (string.IsNullOrEmpty(googleClientSecret) || googleClientSecret == "YOUR_GOOGLE_CLIENT_SECRET") ? "dummy" : googleClientSecret;
+    opts.SignInScheme = "Cookies"; // 소셜 로그인 후 1차 쿠키 임시 저장
+})
+.AddGitHub(opts =>
+{
+    var githubClientId = builder.Configuration["Authentication:GitHub:ClientId"];
+    opts.ClientId = (string.IsNullOrEmpty(githubClientId) || githubClientId == "YOUR_GITHUB_CLIENT_ID") ? "dummy" : githubClientId;
+    var githubClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"];
+    opts.ClientSecret = (string.IsNullOrEmpty(githubClientSecret) || githubClientSecret == "YOUR_GITHUB_CLIENT_SECRET") ? "dummy" : githubClientSecret;
+    opts.SignInScheme = "Cookies";
+    opts.Scope.Add("user:email");
+});
 
 builder.Services.AddCascadingAuthenticationState();
 
@@ -87,6 +104,7 @@ builder.Services.AddScoped<IssueService>();
 builder.Services.AddScoped<PullRequestService>();
 builder.Services.AddScoped<SetupService>();
 builder.Services.AddScoped<AdminSettingsService>();
+builder.Services.AddScoped<TwoFactorService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
@@ -162,7 +180,38 @@ app.UseMiddleware<Aristokeides.Api.Middleware.SetupRedirectMiddleware>();
 app.UseAntiforgery();
 
 app.UseAuthentication();
+app.UseMiddleware<Aristokeides.Api.Middleware.SessionValidationMiddleware>();
 app.UseAuthorization();
+
+// 2FA pending 사용자 접근 제한 미들웨어
+app.Use(async (context, next) =>
+{
+    var user = context.User;
+    if (user.Identity?.IsAuthenticated == true)
+    {
+        var amrClaim = user.FindFirst("amr");
+        if (amrClaim?.Value == "2fa_pending")
+        {
+            var path = context.Request.Path.Value?.ToLowerInvariant();
+            bool isAllowed = path != null && (
+                path.StartsWith("/login-2fa") || 
+                path.StartsWith("/api/auth/2fa/verify") || 
+                path.StartsWith("/api/auth/logout") ||
+                path.StartsWith("/logout") ||
+                path.StartsWith("/_blazor") ||
+                path.StartsWith("/css") ||
+                path.StartsWith("/js")
+            );
+
+            if (!isAllowed)
+            {
+                context.Response.Redirect("/login-2fa");
+                return;
+            }
+        }
+    }
+    await next();
+});
 
 // Middleware for Git Smart HTTP
 app.UseMiddleware<Aristokeides.Api.Middleware.GitSmartHttpMiddleware>();

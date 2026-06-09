@@ -1,0 +1,40 @@
+@page "/login-2fa"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+<PageTitle>2단계 인증</PageTitle>
+
+<div style="max-width: 400px; margin: 40px auto; padding: 24px; background: var(--dominant); border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">
+    <h2 style="margin-top: 0; margin-bottom: 16px;">2단계 인증 (2FA)</h2>
+    <p style="font-size: 14px; color: #6b7280; margin-bottom: 24px; line-height: 1.5;">
+        계정의 보안을 강화하기 위해 OTP 앱의 6자리 보안 코드 또는 10자리 백업 복구 코드를 입력해 주십시오.
+    </p>
+
+    @if (Error == "invalid_code")
+    {
+        <div style="background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; border: 1px solid #fca5a5;">
+            입력하신 OTP 코드 또는 백업 복구 코드가 일치하지 않습니다.
+        </div>
+    }
+
+    <form method="post" action="/api/auth/2fa/verify">
+        <AntiforgeryToken />
+        
+        <div style="margin-bottom: 24px;">
+            <label for="code" style="display: block; font-weight: 600; margin-bottom: 8px;">보안 코드 / 백업 복구 코드</label>
+            <input type="text" id="code" name="code" required autofocus placeholder="6자리 숫자 또는 백업 복구 코드" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; text-align: center;" />
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+            인증 및 로그인
+        </button>
+    </form>
+
+    <p style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 13px;">
+        인증을 취소하시겠습니까? <a href="/api/auth/logout" style="color: #4b5563; text-decoration: underline;">취소 및 로그아웃</a>
+    </p>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+}

@@ -20,6 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<CommitSignature> CommitSignatures => Set<CommitSignature>();
     public DbSet<PullRequestReviewComment> PullRequestReviewComments => Set<PullRequestReviewComment>();
     public DbSet<PullRequestReview> PullRequestReviews => Set<PullRequestReview>();
+    public DbSet<UserSocialLogin> UserSocialLogins => Set<UserSocialLogin>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +34,8 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Email).HasMaxLength(256);
             entity.Property(u => u.Username).HasMaxLength(256);
             entity.Property(u => u.Role).HasMaxLength(50);
+            entity.Property(u => u.TwoFactorSecret).HasMaxLength(128);
+            entity.Property(u => u.TwoFactorRecoveryCodes).HasMaxLength(1024);
             
             entity.HasMany(u => u.Repositories)
                   .WithOne(r => r.Owner)
@@ -162,6 +166,31 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(r => r.AuthorId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserSocialLogin>(entity =>
+        {
+            entity.HasIndex(us => new { us.Provider, us.ProviderKey }).IsUnique();
+            entity.Property(us => us.Provider).HasMaxLength(50);
+            entity.Property(us => us.ProviderKey).HasMaxLength(256);
+
+            entity.HasOne(us => us.User)
+                  .WithMany(u => u.SocialLogins)
+                  .HasForeignKey(us => us.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(us => us.Id);
+            entity.Property(us => us.Id).HasMaxLength(128);
+            entity.Property(us => us.UserAgent).HasMaxLength(512);
+            entity.Property(us => us.IpAddress).HasMaxLength(45);
+
+            entity.HasOne(us => us.User)
+                  .WithMany(u => u.Sessions)
+                  .HasForeignKey(us => us.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

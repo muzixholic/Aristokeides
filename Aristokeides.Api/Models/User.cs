@@ -29,8 +29,26 @@ public class User
 
     public required string Username { get; set; }
 
+    /// <summary>
+    /// 2FA 활성화 여부
+    /// </summary>
+    public bool IsTwoFactorEnabled { get; set; } = false;
+
+    /// <summary>
+    /// 2FA TOTP용 Base32 비밀키
+    /// </summary>
+    public string? TwoFactorSecret { get; set; }
+
+    /// <summary>
+    /// 쉼표로 구분되는 백업 복구 코드 목록
+    /// </summary>
+    public string? TwoFactorRecoveryCodes { get; set; }
+
     public ICollection<Repository> Repositories { get; set; } = new List<Repository>();
     public ICollection<Issue> CreatedIssues { get; set; } = new List<Issue>();
     public ICollection<Issue> AssignedIssues { get; set; } = new List<Issue>();
     public ICollection<SshKey> SshKeys { get; set; } = new List<SshKey>();
+    public ICollection<UserSocialLogin> SocialLogins { get; set; } = new List<UserSocialLogin>();
+    public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
 }
+

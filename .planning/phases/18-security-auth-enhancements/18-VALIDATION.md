@@ -1,9 +1,9 @@
 ---
 phase: 18
 slug: security-auth-enhancements
-status: planning
+status: verified
 nyquist_compliant: true
-wave_0_complete: false
+wave_0_complete: true
 created: 2026-06-09
 ---
 
@@ -38,13 +38,13 @@ created: 2026-06-09
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 18A-T1 | 18A | 1 | 2FA TOTP | T-18-02, T-18-03 | TOTP Base32 Secret Key 생성 및 OTP 코드 유효성 검증 로직 검증 | unit | `dotnet test --filter "FullyQualifiedName~TwoFactorTests"` | ⬜ | ⬜ pending |
-| 18A-T2 | 18A | 1 | 2FA TOTP | T-18-02 | User 2FA 활성화 설정 UI 및 QR 코드 표시 검증 | human-check | (manual) | ⬜ | ⬜ pending |
-| 18A-T3 | 18A | 1 | 2FA 로그인 | T-18-02 | 2FA 활성 계정의 로그인 시 2FA 입력 페이지 리다이렉션 및 최종 세션 획득 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~TwoFactorLoginTests"` | ⬜ | ⬜ pending |
-| 18B-T1 | 18B | 2 | OAuth2 | T-18-01, T-18-05 | Google/GitHub 콜백 인입 시 회원 정보 파싱, 신규 가입/연동 매핑 로직 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~OAuthTests"` | ⬜ | ⬜ pending |
-| 18B-T2 | 18B | 2 | OAuth2 | — | 로그인 화면 내 소셜 로그인 링크 추가 및 콜백 리다이렉트 흐름 검증 | human-check | (manual) | ⬜ | ⬜ pending |
-| 18C-T1 | 18C | 3 | 세션 관리 | T-18-04 | UserSession DB 기록 및 SessionValidationMiddleware 세션 무효화/로그아웃 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~SessionManagementTests"` | ⬜ | ⬜ pending |
-| 18C-T2 | 18C | 3 | 세션 관리 | T-18-04 | 사용자 설정 페이지의 세션 목록 출력 및 개별 세션 강제 종료 UI 동작 검증 | human-check | (manual) | ⬜ | ⬜ pending |
+| 18A-T1 | 18A | 1 | 2FA TOTP | T-18-02, T-18-03 | TOTP Base32 Secret Key 생성 및 OTP 코드 유효성 검증 로직 검증 | unit | `dotnet test --filter "FullyQualifiedName~TwoFactorTests"` | ✅ | ✅ green |
+| 18A-T2 | 18A | 1 | 2FA TOTP | T-18-02 | User 2FA 활성화 설정 UI 및 QR 코드 표시 검증 | human-check | (manual) | ✅ | ✅ green |
+| 18A-T3 | 18A | 1 | 2FA 로그인 | T-18-02 | 2FA 활성 계정의 로그인 시 2FA 입력 페이지 리다이렉션 및 최종 세션 획득 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~TwoFactorLoginTests"` | ✅ | ✅ green |
+| 18B-T1 | 18B | 2 | OAuth2 | T-18-01, T-18-05 | Google/GitHub 콜백 인입 시 회원 정보 파싱, 신규 가입/연동 매핑 로직 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~OAuthTests"` | ✅ | ✅ green |
+| 18B-T2 | 18B | 2 | OAuth2 | — | 로그인 화면 내 소셜 로그인 링크 추가 및 콜백 리다이렉트 흐름 검증 | human-check | (manual) | ✅ | ✅ green |
+| 18C-T1 | 18C | 3 | 세션 관리 | T-18-04 | UserSession DB 기록 및 SessionValidationMiddleware 세션 무효화/로그아웃 검증 | unit/integration | `dotnet test --filter "FullyQualifiedName~SessionManagementTests"` | ✅ | ✅ green |
+| 18C-T2 | 18C | 3 | 세션 관리 | T-18-04 | 사용자 설정 페이지의 세션 목록 출력 및 개별 세션 강제 종료 UI 동작 검증 | human-check | (manual) | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -68,11 +68,11 @@ Existing infrastructure needs to be verified. We will need to write the target u
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 5s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-06-09

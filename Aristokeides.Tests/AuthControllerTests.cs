@@ -210,9 +210,11 @@ namespace Aristokeides.Tests
             return Task.CompletedTask;
         }
 
+        public AuthenticateResult? AuthenticateResult { get; set; }
+
         public Task<AuthenticateResult> AuthenticateAsync(HttpContext context, string? scheme)
         {
-            return Task.FromResult(AuthenticateResult.NoResult());
+            return Task.FromResult(AuthenticateResult ?? AuthenticateResult.NoResult());
         }
 
         public Task ChallengeAsync(HttpContext context, string? scheme, AuthenticationProperties? properties)

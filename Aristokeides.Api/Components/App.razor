@@ -14,6 +14,7 @@
 <body>
     <Routes />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +23,20 @@
         Blazor.addEventListener('enhancedload', () => {
             if (typeof hljs !== 'undefined') { hljs.highlightAll(); }
         });
+        window.renderQrCode = function (elementId, text) {
+            var el = document.getElementById(elementId);
+            if (el) {
+                el.innerHTML = '';
+                new QRCode(el, {
+                    text: text,
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            }
+        };
     </script>
 </body>
 </html>
