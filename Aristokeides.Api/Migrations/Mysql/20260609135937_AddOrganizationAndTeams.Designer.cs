@@ -3,6 +3,7 @@ using System;
 using Aristokeides.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Aristokeides.Api.Migrations.Mysql
 {
     [DbContext(typeof(MysqlAppDbContext))]
-    partial class MysqlAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609135937_AddOrganizationAndTeams")]
+    partial class AddOrganizationAndTeams
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -359,7 +362,7 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.Property<int?>("OrganizationId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("OwnerId")
+                    b.Property<int>("OwnerId")
                         .HasColumnType("int");
 
                     b.Property<string>("PrimaryLanguage")
@@ -378,11 +381,9 @@ namespace Aristokeides.Api.Migrations.Mysql
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId", "Name")
-                        .IsUnique();
+                    b.HasIndex("OrganizationId");
 
-                    b.HasIndex("OwnerId", "Name")
-                        .IsUnique();
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Repositories");
                 });
@@ -784,7 +785,8 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.HasOne("Aristokeides.Api.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Organization");
 

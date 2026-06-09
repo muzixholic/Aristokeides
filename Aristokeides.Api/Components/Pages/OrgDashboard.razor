@@ -1,0 +1,280 @@
+@page "/orgs/{OrgName}"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>조직 대시보드 - @OrgName</PageTitle>
+
+<div style="max-width: 1200px; margin: 0 auto; padding: 32px 24px;">
+    @if (isLoading)
+    {
+        <div style="padding: 64px 0; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>조직 정보를 불러오는 중...</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="background-color: #fef2f2; color: #dc2626; padding: 20px; border-radius: 12px; border: 1px solid #fee2e2; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px; flex-shrink: 0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">오류가 발생했습니다</h3>
+                <p style="margin: 0; font-size: 14px;">@errorMessage</p>
+            </div>
+        </div>
+    }
+    else if (org != null)
+    {
+        <!-- Organization Banner Header -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-radius: 16px; padding: 40px; color: white; margin-bottom: 32px; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1), 0 4px 6px -2px rgba(37, 99, 235, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                    <div style="width: 48px; height: 48px; background: rgba(255, 255, 255, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; backdrop-filter: blur(4px);">
+                        @org.Name.ToUpper().FirstOrDefault()
+                    </div>
+                    <h1 style="font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.025em;">@org.Name</h1>
+                </div>
+                <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; margin: 0; max-width: 700px; line-height: 1.5;">
+                    @(string.IsNullOrWhiteSpace(org.Description) ? "조직 설명이 등록되지 않았습니다." : org.Description)
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="/repositories/new?org=@org.Name" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: white; color: #1e3a8a; border-radius: 10px; font-weight: 600; font-size: 14px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.2s;" class="btn-hover-scale">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    새 저장소 만들기
+                </a>
+                
+                @if (isOwner)
+                {
+                    <a href="/orgs/@org.Name/settings" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; font-weight: 600; font-size: 14px; text-decoration: none; backdrop-filter: blur(4px); transition: all 0.2s;" class="btn-hover-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        조직 설정
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- 3-Column Layout: Repositories, Teams, Members -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;">
+            
+            <!-- Repositories Column -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
+                    <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        저장소
+                        <span style="font-size: 12px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 600;">@org.Repositories.Count</span>
+                    </h2>
+                </div>
+                
+                @if (!org.Repositories.Any())
+                {
+                    <div style="text-align: center; padding: 32px 16px; color: #9ca3af;">
+                        <span style="font-size: 14px; display: block;">생성된 저장소가 없습니다.</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var repo in org.Repositories.OrderByDescending(r => r.UpdatedAt))
+                        {
+                            <div style="border: 1px solid #f3f4f6; border-radius: 8px; padding: 14px; transition: border-color 0.2s, box-shadow 0.2s;" class="item-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <a href="/@org.Name/@repo.Name" style="font-weight: 600; color: #2563eb; text-decoration: none; font-size: 15px;" class="link-hover">
+                                        @repo.Name
+                                    </a>
+                                    <span style="font-size: 11px; background: @(repo.IsPrivate ? "#f3f4f6" : "#ecfdf5"); color: @(repo.IsPrivate ? "#4b5563" : "#059669"); padding: 2px 6px; border-radius: 4px; font-weight: 500;">
+                                        @(repo.IsPrivate ? "Private" : "Public")
+                                    </span>
+                                </div>
+                                <p style="color: #6b7280; font-size: 12px; margin: 0 0 10px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 34px;">
+                                    @(string.IsNullOrWhiteSpace(repo.Description) ? "설명이 없는 저장소입니다." : repo.Description)
+                                </p>
+                                <div style="font-size: 11px; color: #9ca3af; text-align: right;">
+                                    업데이트: @repo.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Teams Column -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
+                    <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        팀 목록
+                        <span style="font-size: 12px; background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-weight: 600;">@org.Teams.Count</span>
+                    </h2>
+                    <a href="/orgs/@org.Name/teams" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">팀 관리 &rarr;</a>
+                </div>
+                
+                @if (!org.Teams.Any())
+                {
+                    <div style="text-align: center; padding: 32px 16px; color: #9ca3af;">
+                        <span style="font-size: 14px; display: block; margin-bottom: 12px;">등록된 팀이 없습니다.</span>
+                        <a href="/orgs/@org.Name/teams" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f3f4f6; color: #4b5563; border-radius: 6px; font-size: 12px; text-decoration: none; font-weight: 500;">
+                            첫 팀 만들기
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var team in org.Teams.OrderBy(t => t.Name))
+                        {
+                            <div style="border: 1px solid #f3f4f6; border-radius: 8px; padding: 14px; transition: border-color 0.2s, box-shadow 0.2s;" class="item-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <a href="/orgs/@org.Name/teams/@team.Name" style="font-weight: 600; color: #1f2937; text-decoration: none; font-size: 15px;" class="link-hover">
+                                        @team.Name
+                                    </a>
+                                </div>
+                                <p style="color: #6b7280; font-size: 12px; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 34px;">
+                                    @(string.IsNullOrWhiteSpace(team.Description) ? "팀 설명이 없습니다." : team.Description)
+                                </p>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Members Column -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
+                    <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        멤버 목록
+                        <span style="font-size: 12px; background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 12px; font-weight: 600;">@org.Members.Count</span>
+                    </h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
+                    @foreach (var member in org.Members.OrderByDescending(m => m.Role).ThenBy(m => m.User.Username))
+                    {
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f9fafb;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 28px; height: 28px; background: #e0f2fe; color: #0369a1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
+                                    @member.User.Username.ToUpper().FirstOrDefault()
+                                </div>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: #1f2937;">@member.User.Username</div>
+                                    <div style="font-size: 11px; color: #9ca3af;">가입일: @member.JoinedAt.ToLocalTime().ToString("yyyy-MM-dd")</div>
+                                </div>
+                            </div>
+                            
+                            <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; background: @(member.Role == "Owner" ? "#fee2e2" : "#f3f4f6"); color: @(member.Role == "Owner" ? "#ef4444" : "#4b5563"); border: 1px solid @(member.Role == "Owner" ? "#fca5a5" : "#e5e7eb");">
+                                @member.Role
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .item-card:hover {
+        border-color: #d1d5db !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .link-hover:hover {
+        text-decoration: underline !important;
+    }
+    .btn-hover-scale:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 12px -2px rgba(0,0,0,0.12) !important;
+    }
+    .btn-hover-opacity:hover {
+        background-color: rgba(255, 255, 255, 0.25) !important;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string OrgName { get; set; } = "";
+
+    private Organization? org;
+    private bool isLoading = true;
+    private string? errorMessage;
+    
+    private int currentUserId;
+    private string currentUsername = "";
+    private bool isOwner = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            currentUserId = userId;
+            currentUsername = user.Identity.Name ?? "";
+
+            org = await DbContext.Organizations
+                .Include(o => o.Members).ThenInclude(m => m.User)
+                .Include(o => o.Teams)
+                .Include(o => o.Repositories)
+                .FirstOrDefaultAsync(o => o.Name.ToLower() == OrgName.ToLower());
+
+            if (org == null)
+            {
+                errorMessage = "조직을 찾을 수 없습니다.";
+                return;
+            }
+
+            var memberShip = org.Members.FirstOrDefault(m => m.UserId == currentUserId);
+            if (memberShip == null)
+            {
+                errorMessage = "해당 조직의 멤버가 아닙니다. 접근 권한이 없습니다.";
+                // 비소속 사용자는 튕겨낸다
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            isOwner = memberShip.Role == "Owner";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"조직 정보를 조회하는 중 오류가 발생했습니다: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

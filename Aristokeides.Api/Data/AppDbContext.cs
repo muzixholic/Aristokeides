@@ -22,6 +22,11 @@ public class AppDbContext : DbContext
     public DbSet<PullRequestReview> PullRequestReviews => Set<PullRequestReview>();
     public DbSet<UserSocialLogin> UserSocialLogins => Set<UserSocialLogin>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<RepositoryPermission> RepositoryPermissions => Set<RepositoryPermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +45,7 @@ public class AppDbContext : DbContext
             entity.HasMany(u => u.Repositories)
                   .WithOne(r => r.Owner)
                   .HasForeignKey(r => r.OwnerId)
+                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(u => u.CreatedIssues)
@@ -55,6 +61,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Repository>(entity =>
         {
+            entity.HasIndex(r => new { r.OwnerId, r.Name }).IsUnique();
+            entity.HasIndex(r => new { r.OrganizationId, r.Name }).IsUnique();
+
             entity.Property(r => r.Name).HasMaxLength(256);
             entity.Property(r => r.Status).HasMaxLength(50);
 
@@ -66,6 +75,11 @@ public class AppDbContext : DbContext
             entity.HasMany(r => r.Issues)
                   .WithOne(i => i.Repository)
                   .HasForeignKey(i => i.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Organization)
+                  .WithMany(o => o.Repositories)
+                  .HasForeignKey(r => r.OrganizationId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -190,6 +204,76 @@ public class AppDbContext : DbContext
             entity.HasOne(us => us.User)
                   .WithMany(u => u.Sessions)
                   .HasForeignKey(us => us.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Organization>(entity =>
+        {
+            entity.HasIndex(o => o.Name).IsUnique();
+            entity.Property(o => o.Name).HasMaxLength(256);
+            entity.Property(o => o.Description).HasMaxLength(512);
+        });
+
+        modelBuilder.Entity<OrganizationMember>(entity =>
+        {
+            entity.HasIndex(om => new { om.OrganizationId, om.UserId }).IsUnique();
+            entity.Property(om => om.Role).HasMaxLength(50);
+
+            entity.HasOne(om => om.Organization)
+                  .WithMany(o => o.Members)
+                  .HasForeignKey(om => om.OrganizationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(om => om.User)
+                  .WithMany()
+                  .HasForeignKey(om => om.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Team>(entity =>
+        {
+            entity.HasIndex(t => new { t.OrganizationId, t.Name }).IsUnique();
+            entity.Property(t => t.Name).HasMaxLength(100);
+            entity.Property(t => t.Description).HasMaxLength(512);
+
+            entity.HasOne(t => t.Organization)
+                  .WithMany(o => o.Teams)
+                  .HasForeignKey(t => t.OrganizationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TeamMember>(entity =>
+        {
+            entity.HasIndex(tm => new { tm.TeamId, tm.UserId }).IsUnique();
+
+            entity.HasOne(tm => tm.Team)
+                  .WithMany(t => t.Members)
+                  .HasForeignKey(tm => tm.TeamId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(tm => tm.User)
+                  .WithMany()
+                  .HasForeignKey(tm => tm.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RepositoryPermission>(entity =>
+        {
+            entity.Property(rp => rp.AccessLevel).HasMaxLength(50);
+
+            entity.HasOne(rp => rp.Repository)
+                  .WithMany()
+                  .HasForeignKey(rp => rp.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rp => rp.User)
+                  .WithMany()
+                  .HasForeignKey(rp => rp.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rp => rp.Team)
+                  .WithMany(t => t.Permissions)
+                  .HasForeignKey(rp => rp.TeamId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

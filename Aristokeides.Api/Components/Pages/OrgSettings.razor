@@ -1,0 +1,383 @@
+@page "/orgs/{OrgName}/settings"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>조직 설정 - @OrgName</PageTitle>
+
+<div style="max-width: 900px; margin: 0 auto; padding: 32px 24px;">
+    
+    <!-- Breadcrumbs & Header -->
+    <div style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+            <a href="/orgs/@OrgName" style="color: #6b7280; text-decoration: none;">@OrgName</a>
+            <span>/</span>
+            <span style="color: #111827; font-weight: 500;">설정</span>
+        </div>
+        <h1 style="font-size: 28px; font-weight: 700; color: #111827; margin: 0;">조직 설정 및 멤버 관리</h1>
+    </div>
+
+    @if (isLoading)
+    {
+        <div style="padding: 64px 0; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>설정 정보를 로드하는 중...</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="background-color: #fef2f2; color: #dc2626; padding: 16px 20px; border-radius: 10px; border: 1px solid #fee2e2; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px; flex-shrink: 0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <div>@errorMessage</div>
+        </div>
+    }
+    else if (org != null)
+    {
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div style="background-color: #f0fdf4; color: #16a34a; padding: 14px 18px; border-radius: 10px; border: 1px solid #bbf7d0; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>@successMessage</span>
+            </div>
+        }
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+            
+            <!-- Invite Member Section -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0;">새로운 멤버 초대</h2>
+                <p style="color: #6b7280; font-size: 13px; margin: 0 0 20px 0; line-height: 1.4;">
+                    사용자 아이디(Username) 또는 이메일 주소를 입력하여 이 조직에 멤버(Member)로 즉시 추가합니다.
+                </p>
+                
+                <div style="display: flex; gap: 12px; max-width: 500px;">
+                    <input type="text" @bind="inviteInput" placeholder="사용자 이름 또는 이메일" style="flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.15s;" @onkeyup="HandleInviteKey" />
+                    <button @onclick="InviteMember" style="padding: 10px 18px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; min-width: 80px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                        초대하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Members List Section -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 20px 0; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">소속 멤버 관리</h2>
+                
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #f3f4f6; color: #4b5563; font-weight: 600;">
+                                <th style="padding: 12px 16px;">사용자</th>
+                                <th style="padding: 12px 16px;">가입 이메일</th>
+                                <th style="padding: 12px 16px;">역할</th>
+                                <th style="padding: 12px 16px; text-align: right;">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var member in org.Members.OrderByDescending(m => m.Role).ThenBy(m => m.User.Username))
+                            {
+                                <tr style="border-bottom: 1px solid #f9fafb; transition: background 0.15s;" class="table-row-hover">
+                                    <td style="padding: 16px; display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 32px; height: 32px; background: #e0f2fe; color: #0369a1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">
+                                            @member.User.Username.ToUpper().FirstOrDefault()
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 600; color: #1f2937;">@member.User.Username</div>
+                                            <div style="font-size: 11px; color: #9ca3af;">가입일: @member.JoinedAt.ToLocalTime().ToString("yyyy-MM-dd")</div>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 16px; color: #4b5563;">@member.User.Email</td>
+                                    <td style="padding: 16px;">
+                                        @if (member.UserId == currentUserId)
+                                        {
+                                            <!-- 자기 자신은 역할 변경을 할 수 없거나 제한되므로 뱃지로 표시 -->
+                                            <span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5;">
+                                                @member.Role (본인)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <select value="@member.Role" @onchange="(e) => ChangeMemberRole(member, e.Value?.ToString())" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background-color: white; cursor: pointer;">
+                                                <option value="Owner">Owner</option>
+                                                <option value="Member">Member</option>
+                                            </select>
+                                        }
+                                    </td>
+                                    <td style="padding: 16px; text-align: right;">
+                                        @if (member.UserId != currentUserId)
+                                        {
+                                            <button @onclick="() => RevokeMembership(member)" style="padding: 6px 12px; border: 1px solid #fca5a5; background: #fff5f5; color: #ef4444; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" class="btn-revoke">
+                                                방출
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size: 12px; color: #9ca3af;">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    input:focus {
+        border-color: #2563eb !important;
+    }
+    .table-row-hover:hover {
+        background-color: #f9fafb;
+    }
+    .btn-revoke:hover {
+        background-color: #ef4444 !important;
+        color: white !important;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string OrgName { get; set; } = "";
+
+    private Organization? org;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private int currentUserId;
+    private string currentUsername = "";
+    private string inviteInput = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            currentUserId = userId;
+            currentUsername = user.Identity.Name ?? "";
+
+            await LoadOrganizationAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"설정을 로드하는 중 오류가 발생했습니다: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadOrganizationAsync()
+    {
+        org = await DbContext.Organizations
+            .Include(o => o.Members).ThenInclude(m => m.User)
+            .Include(o => o.Teams)
+            .Include(o => o.Repositories)
+            .FirstOrDefaultAsync(o => o.Name.ToLower() == OrgName.ToLower());
+
+        if (org == null)
+        {
+            errorMessage = "조직을 찾을 수 없습니다.";
+            return;
+        }
+
+        var memberShip = org.Members.FirstOrDefault(m => m.UserId == currentUserId);
+        if (memberShip == null)
+        {
+            // 비소속 사용자 접근 시 홈으로 튕겨냄 (must_haves)
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        if (memberShip.Role != "Owner")
+        {
+            // 소유자가 아니면 권한 없음으로 홈으로 튕겨냄 (must_haves)
+            Navigation.NavigateTo("/");
+            return;
+        }
+    }
+
+    private async Task HandleInviteKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await InviteMember();
+        }
+    }
+
+    private async Task InviteMember()
+    {
+        if (org == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        var input = inviteInput?.Trim();
+        if (string.IsNullOrEmpty(input))
+        {
+            errorMessage = "초대할 사용자의 아이디 또는 이메일을 입력해 주세요.";
+            return;
+        }
+
+        try
+        {
+            // 사용자 검색 (Username 또는 Email)
+            var targetUser = await DbContext.Users.FirstOrDefaultAsync(u => 
+                u.Username.ToLower() == input.ToLower() || 
+                u.Email.ToLower() == input.ToLower());
+
+            if (targetUser == null)
+            {
+                errorMessage = $"존재하지 않는 사용자입니다: {input}";
+                return;
+            }
+
+            // 이미 조직에 소속된 멤버인지 검사
+            var isAlreadyMember = org.Members.Any(m => m.UserId == targetUser.Id);
+            if (isAlreadyMember)
+            {
+                errorMessage = $"'{targetUser.Username}'님은 이미 이 조직의 멤버입니다.";
+                return;
+            }
+
+            // 조직 멤버 추가 (기본 Member 권한)
+            var newMember = new OrganizationMember
+            {
+                OrganizationId = org.Id,
+                UserId = targetUser.Id,
+                Role = "Member",
+                JoinedAt = DateTime.UtcNow
+            };
+
+            DbContext.OrganizationMembers.Add(newMember);
+            await DbContext.SaveChangesAsync();
+
+            inviteInput = "";
+            successMessage = $"'{targetUser.Username}'님을 조직 멤버로 성공적으로 추가했습니다.";
+            await LoadOrganizationAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"멤버 초대 도중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task ChangeMemberRole(OrganizationMember member, string? newRole)
+    {
+        if (org == null || member == null || string.IsNullOrEmpty(newRole)) return;
+        errorMessage = null;
+        successMessage = null;
+
+        if (newRole != "Owner" && newRole != "Member")
+        {
+            errorMessage = "잘못된 역할 지정입니다.";
+            return;
+        }
+
+        try
+        {
+            var dbMember = await DbContext.OrganizationMembers
+                .FirstOrDefaultAsync(om => om.Id == member.Id);
+
+            if (dbMember != null)
+            {
+                dbMember.Role = newRole;
+                await DbContext.SaveChangesAsync();
+                successMessage = $"'{member.User.Username}'님의 역할을 '{newRole}'(으)로 갱신했습니다.";
+                await LoadOrganizationAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"역할 변경 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task RevokeMembership(OrganizationMember member)
+    {
+        if (org == null || member == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var dbMember = await DbContext.OrganizationMembers
+                .FirstOrDefaultAsync(om => om.Id == member.Id);
+
+            if (dbMember == null)
+            {
+                errorMessage = "멤버 정보를 데이터베이스에서 찾을 수 없습니다.";
+                return;
+            }
+
+            // 1. 해당 조직 아래 모든 팀에서 해당 사용자 매핑 제거
+            var orgTeamIds = org.Teams.Select(t => t.Id).ToList();
+            var teamMemberships = await DbContext.TeamMembers
+                .Where(tm => tm.UserId == member.UserId && orgTeamIds.Contains(tm.TeamId))
+                .ToListAsync();
+
+            if (teamMemberships.Any())
+            {
+                DbContext.TeamMembers.RemoveRange(teamMemberships);
+            }
+
+            // 2. 해당 조직 아래 모든 저장소의 직접 사용자 권한 제거
+            var orgRepoIds = org.Repositories.Select(r => r.Id).ToList();
+            var userPermissions = await DbContext.RepositoryPermissions
+                .Where(rp => rp.UserId == member.UserId && orgRepoIds.Contains(rp.RepositoryId))
+                .ToListAsync();
+
+            if (userPermissions.Any())
+            {
+                DbContext.RepositoryPermissions.RemoveRange(userPermissions);
+            }
+
+            // 3. 조직원 레코드 삭제
+            DbContext.OrganizationMembers.Remove(dbMember);
+
+            await DbContext.SaveChangesAsync();
+            successMessage = $"'{member.User.Username}'님을 조직에서 내보냈습니다.";
+            await LoadOrganizationAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"멤버 방출 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+}

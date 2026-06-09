@@ -1,0 +1,231 @@
+@page "/orgs/new"
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>새 조직 만들기 - Aristokeides</PageTitle>
+
+<div style="max-width: 650px; margin: 60px auto; padding: 40px; background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(229, 231, 235, 0.8); border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); backdrop-filter: blur(8px);">
+    <!-- Header Section -->
+    <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 12px; color: white; margin-bottom: 16px; box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 32px; height: 32px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+            </svg>
+        </div>
+        <h2 style="font-size: 26px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; letter-spacing: -0.025em;">새로운 조직 만들기</h2>
+        <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.5;">조직을 통해 프로젝트, 저장소, 팀 멤버를 하나로 모아 안전하게 관리하고 협업할 수 있습니다.</p>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div style="background-color: #fef2f2; color: #dc2626; padding: 14px 18px; border-radius: 10px; border: 1px solid #fee2e2; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; flex-shrink: 0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <span>@errorMessage</span>
+        </div>
+    }
+
+    <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="NewOrgForm">
+        <DataAnnotationsValidator />
+
+        <!-- Owner Information -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: #4b5563;">조직 소유자</label>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb; color: #4b5563;">
+                <div style="width: 28px; height: 28px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #4b5563;">
+                    @currentUsername.ToUpper().FirstOrDefault()
+                </div>
+                <span style="font-size: 14px; font-weight: 600;">@currentUsername (본인)</span>
+            </div>
+            <span style="font-size: 12px; color: #9ca3af; display: block; margin-top: 6px;">조직을 생성하는 사용자는 자동으로 해당 조직의 소유자(Owner)가 됩니다.</span>
+        </div>
+
+        <!-- Organization Name -->
+        <div style="margin-bottom: 20px;">
+            <label for="org-name" style="display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: #4b5563;">조직 이름</label>
+            <div style="position: relative;">
+                <InputText id="org-name" @bind-Value="model.Name" placeholder="예: my-organization" style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; box-sizing: border-box; transition: border-color 0.15s ease-in-out; outline: none;" />
+            </div>
+            <ValidationMessage For="@(() => model.Name)" style="color: #dc2626; font-size: 12px; margin-top: 6px; display: block;" />
+            <span style="font-size: 12px; color: #9ca3af; display: block; margin-top: 6px;">
+                영문 소문자, 숫자, 대시(-)만 사용할 수 있습니다. URL 주소의 일부로 사용됩니다.
+            </span>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 28px;">
+            <label for="description" style="display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: #4b5563;">조직 설명 <span style="font-weight: 400; color: #9ca3af;">(선택)</span></label>
+            <InputTextArea id="description" @bind-Value="model.Description" placeholder="조직의 목적이나 멤버들에게 알릴 설명을 입력하세요." rows="4" style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; font-family: inherit; box-sizing: border-box; resize: vertical; transition: border-color 0.15s ease-in-out; outline: none;" />
+            <ValidationMessage For="@(() => model.Description)" style="color: #dc2626; font-size: 12px; margin-top: 6px; display: block;" />
+        </div>
+
+        <!-- Submit and Cancel Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid #f3f4f6; padding-top: 24px;">
+            <a href="/" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border: 1px solid #d1d5db; border-radius: 10px; color: #4b5563; font-weight: 600; font-size: 14px; text-decoration: none; background: #ffffff; transition: background 0.15s; cursor: pointer;">
+                취소
+            </a>
+            <button type="submit" disabled="@isSubmitting" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none; border-radius: 10px; color: white; font-weight: 600; font-size: 14px; cursor: @(isSubmitting ? "not-allowed" : "pointer"); opacity: @(isSubmitting ? 0.8 : 1); box-shadow: 0 4px 12px 0 rgba(37, 99, 235, 0.2); transition: all 0.15s;">
+                @if (isSubmitting)
+                {
+                    <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #ffffff; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; margin-right: 8px;"></span>
+                    <span>생성하는 중...</span>
+                }
+                else
+                {
+                    <span>조직 만들기</span>
+                }
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    input:focus, textarea:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    }
+</style>
+
+@code {
+    private string currentUsername = "";
+    private int currentUserId;
+    private bool isSubmitting = false;
+    private string? errorMessage;
+
+    private OrgFormModel model = new();
+
+    public class OrgFormModel
+    {
+        private string _name = "";
+
+        [Required(ErrorMessage = "조직 이름을 입력해 주세요.")]
+        [StringLength(100, ErrorMessage = "조직 이름은 100자 이하이어야 합니다.")]
+        [RegularExpression(@"^[a-z0-9\-]+$", ErrorMessage = "조직 이름은 영문 소문자, 숫자, 대시(-)만 포함할 수 있습니다.")]
+        public string Name
+        {
+            get => _name;
+            set => _name = value?.ToLowerInvariant() ?? "";
+        }
+
+        [StringLength(500, ErrorMessage = "설명은 500자 이하이어야 합니다.")]
+        public string? Description { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUsername = user.Identity.Name ?? "";
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null)
+                {
+                    currentUserId = int.Parse(userIdClaim.Value);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"사용자 정보를 로드하는 데 실패했습니다. ({ex.Message})";
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var nameLower = model.Name.ToLowerInvariant();
+
+            // 1. Username과의 중복 검사
+            var isUsernameDuplicate = await DbContext.Users
+                .AnyAsync(u => u.Username.ToLower() == nameLower);
+
+            if (isUsernameDuplicate)
+            {
+                errorMessage = $"입력한 이름 '{model.Name}'은(는) 이미 사용 중인 사용자명입니다. 다른 이름을 사용해 주세요.";
+                return;
+            }
+
+            // 2. Organization Name과의 중복 검사
+            var isOrgNameDuplicate = await DbContext.Organizations
+                .AnyAsync(o => o.Name.ToLower() == nameLower);
+
+            if (isOrgNameDuplicate)
+            {
+                errorMessage = $"이미 사용 중인 조직 이름입니다: {model.Name}";
+                return;
+            }
+
+            // 3. 신규 조직 엔티티 생성
+            var organization = new Organization
+            {
+                Name = model.Name,
+                Description = model.Description,
+                CreatedAt = DateTime.UtcNow
+            };
+            DbContext.Organizations.Add(organization);
+
+            // 4. 소유자(Owner) 멤버 링크 추가
+            var orgMember = new OrganizationMember
+            {
+                Organization = organization,
+                UserId = currentUserId,
+                Role = "Owner",
+                JoinedAt = DateTime.UtcNow
+            };
+            DbContext.OrganizationMembers.Add(orgMember);
+
+            // 트랜잭션으로 한꺼번에 저장
+            await DbContext.SaveChangesAsync();
+
+            // 5. 리다이렉트 처리
+            // 조직 대시보드 컴포넌트가 어플리케이션 내에 정의되어 있는지 확인
+            var hasOrgDashboard = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(s => s.GetTypes())
+                .Any(p => p.GetCustomAttributes(typeof(Microsoft.AspNetCore.Components.RouteAttribute), inherit: true)
+                           .Cast<Microsoft.AspNetCore.Components.RouteAttribute>()
+                           .Any(r => r.Template.Equals($"/orgs/{nameLower}", StringComparison.OrdinalIgnoreCase) || 
+                                     r.Template.Equals("/orgs/{name}", StringComparison.OrdinalIgnoreCase) ||
+                                     r.Template.Contains("/orgs/{orgname}") || 
+                                     r.Template.Contains("/orgs/{name}")));
+
+            if (hasOrgDashboard)
+            {
+                Navigation.NavigateTo($"/orgs/{nameLower}");
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"조직 생성에 실패했습니다: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

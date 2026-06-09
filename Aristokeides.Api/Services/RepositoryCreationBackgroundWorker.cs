@@ -31,18 +31,19 @@ public class RepositoryCreationBackgroundWorker : BackgroundService
 
                 var repo = await db.Repositories
                     .Include(r => r.Owner)
+                    .Include(r => r.Organization)
                     .FirstOrDefaultAsync(r => r.Id == repoId, stoppingToken);
 
-                if (repo == null || repo.Owner == null)
+                if (repo == null || (repo.Owner == null && repo.Organization == null))
                 {
-                    _logger.LogWarning("Repository or Owner not found for Id {RepoId}", repoId);
+                    _logger.LogWarning("Repository, Owner or Organization not found for Id {RepoId}", repoId);
                     continue;
                 }
 
-                var username = repo.Owner.Username;
+                var ownerName = repo.Owner != null ? repo.Owner.Username : repo.Organization!.Name;
                 var repoName = repo.Name;
                 var basePath = Path.GetFullPath("GitRepos");
-                var gitPath = Path.Combine(basePath, username, $"{repoName}.git");
+                var gitPath = Path.Combine(basePath, ownerName, $"{repoName}.git");
 
                 Directory.CreateDirectory(Path.GetDirectoryName(gitPath)!);
                 LibGit2Sharp.Repository.Init(gitPath, isBare: true);

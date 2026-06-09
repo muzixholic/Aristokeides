@@ -3,6 +3,7 @@ using System;
 using Aristokeides.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Aristokeides.Api.Migrations.Mysql
 {
     [DbContext(typeof(MysqlAppDbContext))]
-    partial class MysqlAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609140236_UpdateRepositoryOwnership")]
+    partial class UpdateRepositoryOwnership
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -1,0 +1,518 @@
+@page "/orgs/{OrgName}/teams/{TeamName}"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>팀 상세 설정 - @TeamName</PageTitle>
+
+<div style="max-width: 1100px; margin: 0 auto; padding: 32px 24px;">
+    
+    <!-- Breadcrumbs & Header -->
+    <div style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+            <a href="/orgs/@OrgName" style="color: #6b7280; text-decoration: none;">@OrgName</a>
+            <span>/</span>
+            <a href="/orgs/@OrgName/teams" style="color: #6b7280; text-decoration: none;">팀 목록</a>
+            <span>/</span>
+            <span style="color: #111827; font-weight: 500;">@TeamName</span>
+        </div>
+        
+        @if (team != null)
+        {
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px; padding: 28px; color: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div>
+                    <h1 style="font-size: 24px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                        팀: @team.Name
+                    </h1>
+                    <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0 0; line-height: 1.5;">
+                        @(string.IsNullOrWhiteSpace(team.Description) ? "팀 설명이 없습니다." : team.Description)
+                    </p>
+                </div>
+                @if (isOwner)
+                {
+                    <button @onclick="DeleteTeam" style="padding: 10px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#dc2626'" onmouseout="this.style.backgroundColor='#ef4444'">
+                        팀 삭제
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (isLoading)
+    {
+        <div style="padding: 64px 0; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>상세 정보를 로드하는 중...</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="background-color: #fef2f2; color: #dc2626; padding: 16px 20px; border-radius: 10px; border: 1px solid #fee2e2; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px; flex-shrink: 0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <div>@errorMessage</div>
+        </div>
+    }
+    else if (org != null && team != null)
+    {
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div style="background-color: #f0fdf4; color: #16a34a; padding: 14px 18px; border-radius: 10px; border: 1px solid #bbf7d0; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>@successMessage</span>
+            </div>
+        }
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 28px;">
+            
+            <!-- Team Members Management -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 16px 0; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    팀원 관리
+                    <span style="font-size: 12px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 600;">@team.Members.Count 명</span>
+                </h2>
+                
+                @if (isOwner)
+                {
+                    <!-- Add Team Member Form -->
+                    <div style="margin-bottom: 24px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                        <label style="display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px;">팀원 추가</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select @bind="selectedUserIdToAdd" style="flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background: white; cursor: pointer;">
+                                <option value="0">-- 추가할 조직원 선택 --</option>
+                                @foreach (var eligibleMember in eligibleMembers)
+                                {
+                                    <option value="@eligibleMember.User.Id">@eligibleMember.User.Username (@eligibleMember.Role)</option>
+                                }
+                            </select>
+                            <button @onclick="AddTeamMember" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">추가</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!team.Members.Any())
+                {
+                    <div style="text-align: center; padding: 32px 16px; color: #9ca3af; font-size: 14px;">
+                        팀에 소속된 멤버가 없습니다.
+                    </div>
+                }
+                else
+                {
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        @foreach (var member in team.Members.OrderBy(m => m.User.Username))
+                        {
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f9fafb;" class="list-item-hover">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 28px; height: 28px; background: #f3f4f6; color: #4b5563; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
+                                        @member.User.Username.ToUpper().FirstOrDefault()
+                                    </div>
+                                    <span style="font-size: 14px; font-weight: 600; color: #1f2937;">@member.User.Username</span>
+                                </div>
+                                
+                                @if (isOwner)
+                                {
+                                    <button @onclick="() => RemoveTeamMember(member)" style="padding: 4px 8px; border: 1px solid #fca5a5; background: #fff5f5; color: #ef4444; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;" class="btn-revoke">
+                                        제거
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Team Repository Permissions -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 16px 0; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    저장소 권한 설정
+                    <span style="font-size: 12px; background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-weight: 600;">@team.Permissions.Count 개</span>
+                </h2>
+                
+                @if (isOwner)
+                {
+                    <!-- Add Repository Permission Form -->
+                    <div style="margin-bottom: 24px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                        <label style="display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px;">저장소 권한 추가</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <select @bind="selectedRepoIdToAdd" style="flex: 2; min-width: 150px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background: white; cursor: pointer;">
+                                <option value="@Guid.Empty">-- 대상 저장소 선택 --</option>
+                                @foreach (var repo in org.Repositories.OrderBy(r => r.Name))
+                                {
+                                    <option value="@repo.Id">@repo.Name</option>
+                                }
+                            </select>
+                            
+                            <select @bind="selectedAccessLevel" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background: white; cursor: pointer;">
+                                <option value="Read">Read</option>
+                                <option value="Write">Write</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                            
+                            <button @onclick="AddRepoPermission" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">할당</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!team.Permissions.Any())
+                {
+                    <div style="text-align: center; padding: 32px 16px; color: #9ca3af; font-size: 14px;">
+                        할당된 저장소 권한이 없습니다.
+                    </div>
+                }
+                else
+                {
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #f3f4f6; color: #4b5563; font-weight: 600;">
+                                    <th style="padding: 8px 8px;">저장소</th>
+                                    <th style="padding: 8px 8px;">권한 레벨</th>
+                                    @if (isOwner)
+                                    {
+                                        <th style="padding: 8px 8px; text-align: right;">액션</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var perm in team.Permissions.OrderBy(p => p.Repository.Name))
+                                {
+                                    <tr style="border-bottom: 1px solid #f9fafb;">
+                                        <td style="padding: 10px 8px; font-weight: 600; color: #374151;">
+                                            @perm.Repository.Name
+                                        </td>
+                                        <td style="padding: 10px 8px;">
+                                            <span style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: @GetAccessLevelBadgeColor(perm.AccessLevel); color: @GetAccessLevelTextColor(perm.AccessLevel);">
+                                                @perm.AccessLevel
+                                            </span>
+                                        </td>
+                                        @if (isOwner)
+                                        {
+                                            <td style="padding: 10px 8px; text-align: right;">
+                                                <button @onclick="() => RemoveRepoPermission(perm)" style="padding: 4px 8px; border: 1px solid #fca5a5; background: #fff5f5; color: #ef4444; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;" class="btn-revoke">
+                                                    삭제
+                                                </button>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .list-item-hover:hover {
+        background-color: #f9fafb;
+    }
+    .btn-revoke:hover {
+        background-color: #ef4444 !important;
+        color: white !important;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string OrgName { get; set; } = "";
+
+    [Parameter]
+    public string TeamName { get; set; } = "";
+
+    private Organization? org;
+    private Team? team;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private int currentUserId;
+    private string currentUsername = "";
+    private bool isOwner = false;
+
+    // Team Member selection fields
+    private int selectedUserIdToAdd = 0;
+    private List<OrganizationMember> eligibleMembers = new();
+
+    // Repository Permission fields
+    private Guid selectedRepoIdToAdd = Guid.Empty;
+    private string selectedAccessLevel = "Read";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            currentUserId = userId;
+            currentUsername = user.Identity.Name ?? "";
+
+            await LoadTeamDetailsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"상세 정보를 로드하는 중 오류가 발생했습니다: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadTeamDetailsAsync()
+    {
+        org = await DbContext.Organizations
+            .Include(o => o.Members).ThenInclude(m => m.User)
+            .Include(o => o.Repositories)
+            .FirstOrDefaultAsync(o => o.Name.ToLower() == OrgName.ToLower());
+
+        if (org == null)
+        {
+            errorMessage = "조직을 찾을 수 없습니다.";
+            return;
+        }
+
+        var memberShip = org.Members.FirstOrDefault(m => m.UserId == currentUserId);
+        if (memberShip == null)
+        {
+            // 비소속 사용자 접근 시 홈으로 튕겨냄 (must_haves)
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        isOwner = memberShip.Role == "Owner";
+
+        team = await DbContext.Teams
+            .Include(t => t.Members).ThenInclude(tm => tm.User)
+            .Include(t => t.Permissions).ThenInclude(p => p.Repository)
+            .FirstOrDefaultAsync(t => t.OrganizationId == org.Id && t.Name.ToLower() == TeamName.ToLower());
+
+        if (team == null)
+        {
+            errorMessage = "팀을 찾을 수 없습니다.";
+            return;
+        }
+
+        // 현재 팀원이 아닌 조직 멤버 목록을 eligibleMembers로 채움
+        eligibleMembers = org.Members
+            .Where(om => !team.Members.Any(tm => tm.UserId == om.UserId))
+            .ToList();
+    }
+
+    private async Task AddTeamMember()
+    {
+        if (team == null || selectedUserIdToAdd == 0) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var isAlreadyMember = team.Members.Any(tm => tm.UserId == selectedUserIdToAdd);
+            if (isAlreadyMember)
+            {
+                errorMessage = "이미 팀에 소속된 팀원입니다.";
+                return;
+            }
+
+            var teamMember = new TeamMember
+            {
+                TeamId = team.Id,
+                UserId = selectedUserIdToAdd
+            };
+
+            DbContext.TeamMembers.Add(teamMember);
+            await DbContext.SaveChangesAsync();
+
+            successMessage = "팀원을 성공적으로 추가했습니다.";
+            selectedUserIdToAdd = 0;
+
+            await LoadTeamDetailsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"팀원 추가 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task RemoveTeamMember(TeamMember member)
+    {
+        if (team == null || member == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var dbMember = await DbContext.TeamMembers
+                .FirstOrDefaultAsync(tm => tm.Id == member.Id);
+
+            if (dbMember != null)
+            {
+                DbContext.TeamMembers.Remove(dbMember);
+                await DbContext.SaveChangesAsync();
+                successMessage = $"'{member.User.Username}'님을 팀에서 성공적으로 제거했습니다.";
+                await LoadTeamDetailsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"팀원 제거 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task AddRepoPermission()
+    {
+        if (team == null || selectedRepoIdToAdd == Guid.Empty) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            // 이미 매핑된 권한이 있는지 체크
+            var existingPerm = await DbContext.RepositoryPermissions
+                .FirstOrDefaultAsync(rp => rp.TeamId == team.Id && rp.RepositoryId == selectedRepoIdToAdd);
+
+            if (existingPerm != null)
+            {
+                // 권한 업데이트
+                existingPerm.AccessLevel = selectedAccessLevel;
+                successMessage = "저장소 권한 수준을 업데이트했습니다.";
+            }
+            else
+            {
+                // 신규 권한 추가
+                var newPerm = new RepositoryPermission
+                {
+                    RepositoryId = selectedRepoIdToAdd,
+                    TeamId = team.Id,
+                    AccessLevel = selectedAccessLevel
+                };
+                DbContext.RepositoryPermissions.Add(newPerm);
+                successMessage = "저장소 권한을 성공적으로 부여했습니다.";
+            }
+
+            await DbContext.SaveChangesAsync();
+            selectedRepoIdToAdd = Guid.Empty;
+            selectedAccessLevel = "Read";
+
+            await LoadTeamDetailsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"저장소 권한 설정 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task RemoveRepoPermission(RepositoryPermission permission)
+    {
+        if (team == null || permission == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var dbPerm = await DbContext.RepositoryPermissions
+                .FirstOrDefaultAsync(rp => rp.Id == permission.Id);
+
+            if (dbPerm != null)
+            {
+                DbContext.RepositoryPermissions.Remove(dbPerm);
+                await DbContext.SaveChangesAsync();
+                successMessage = "저장소 권한을 성공적으로 해제했습니다.";
+                await LoadTeamDetailsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"저장소 권한 해제 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteTeam()
+    {
+        if (team == null || org == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            // 팀의 팀원 삭제
+            var teamMembers = await DbContext.TeamMembers.Where(tm => tm.TeamId == team.Id).ToListAsync();
+            if (teamMembers.Any())
+            {
+                DbContext.TeamMembers.RemoveRange(teamMembers);
+            }
+
+            // 팀의 저장소 권한 삭제
+            var teamPerms = await DbContext.RepositoryPermissions.Where(rp => rp.TeamId == team.Id).ToListAsync();
+            if (teamPerms.Any())
+            {
+                DbContext.RepositoryPermissions.RemoveRange(teamPerms);
+            }
+
+            // 팀 엔티티 삭제
+            DbContext.Teams.Remove(team);
+            await DbContext.SaveChangesAsync();
+
+            Navigation.NavigateTo($"/orgs/{OrgName}/teams");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"팀 삭제 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private string GetAccessLevelBadgeColor(string level)
+    {
+        return level switch
+        {
+            "Admin" => "#fee2e2",
+            "Write" => "#fef3c7",
+            "Read" => "#e0f2fe",
+            _ => "#f3f4f6"
+        };
+    }
+
+    private string GetAccessLevelTextColor(string level)
+    {
+        return level switch
+        {
+            "Admin" => "#ef4444",
+            "Write" => "#d97706",
+            "Read" => "#0369a1",
+            _ => "#4b5563"
+        };
+    }
+}

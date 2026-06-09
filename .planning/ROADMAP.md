@@ -16,9 +16,9 @@
 - [x] 사용자별 활성 세션 목록 조회 및 세션 만료, 특정 기기 원격 로그아웃 구현
 
 ### Phase 19: 조직 및 팀 기능
-- [ ] 조직(Organization) 엔티티 정의, 생성 및 프로필 설정 UI 추가
-- [ ] 조직 내 팀(Team) 생성 및 사용자 추가/제거 기능 구현
-- [ ] 조직 저장소에 대한 팀/개별 사용자 권한 설정 및 접근 제어(Read/Write/Admin) 적용
+- [x] 조직(Organization) 엔티티 정의, 생성 및 프로필 설정 UI 추가
+- [x] 조직 내 팀(Team) 생성 및 사용자 추가/제거 기능 구현
+- [x] 조직 저장소에 대한 팀/개별 사용자 권한 설정 및 접근 제어(Read/Write/Admin) 적용
 
 ### Phase 20: Git LFS (Large File Storage) 지원
 - [ ] Git LFS API 규격(LFS Batch API, Locks API) 엔드포인트 구현

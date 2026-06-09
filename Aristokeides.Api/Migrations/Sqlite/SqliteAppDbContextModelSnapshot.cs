@@ -161,6 +161,62 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.ToTable("IssueComments");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Organization", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Organizations");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.OrganizationMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationMembers");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.PullRequest", b =>
                 {
                     b.Property<Guid>("IssueId")
@@ -298,7 +354,10 @@ namespace Aristokeides.Api.Migrations.Sqlite
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("OwnerId")
+                    b.Property<int?>("OrganizationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("OwnerId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("PrimaryLanguage")
@@ -317,9 +376,44 @@ namespace Aristokeides.Api.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("OrganizationId", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("OwnerId", "Name")
+                        .IsUnique();
 
                     b.ToTable("Repositories");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.RepositoryPermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AccessLevel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TeamId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RepositoryPermissions");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.SshKey", b =>
@@ -356,6 +450,54 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.HasIndex("UserId");
 
                     b.ToTable("SshKeys");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.Team", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.TeamMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TeamId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("TeamMembers");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.User", b =>
@@ -555,6 +697,25 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("Issue");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.OrganizationMember", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Organization", "Organization")
+                        .WithMany("Members")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.PullRequest", b =>
                 {
                     b.HasOne("Aristokeides.Api.Models.Issue", "Issue")
@@ -613,13 +774,44 @@ namespace Aristokeides.Api.Migrations.Sqlite
 
             modelBuilder.Entity("Aristokeides.Api.Models.Repository", b =>
                 {
+                    b.HasOne("Aristokeides.Api.Models.Organization", "Organization")
+                        .WithMany("Repositories")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Aristokeides.Api.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.RepositoryPermission", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Owner");
+                    b.HasOne("Aristokeides.Api.Models.Team", "Team")
+                        .WithMany("Permissions")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Aristokeides.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Repository");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.SshKey", b =>
@@ -629,6 +821,36 @@ namespace Aristokeides.Api.Migrations.Sqlite
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.Team", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Organization", "Organization")
+                        .WithMany("Teams")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.TeamMember", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Team", "Team")
+                        .WithMany("Members")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
 
                     b.Navigation("User");
                 });
@@ -667,6 +889,15 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("PullRequest");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Organization", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Repositories");
+
+                    b.Navigation("Teams");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.PullRequestReviewComment", b =>
                 {
                     b.Navigation("Replies");
@@ -677,6 +908,13 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("BoardColumns");
 
                     b.Navigation("Issues");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.Team", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.User", b =>

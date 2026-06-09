@@ -254,7 +254,10 @@ public class SshServerBackgroundService : BackgroundService
 
         var repository = await dbContext.Repositories
             .Include(r => r.Owner)
-            .FirstOrDefaultAsync(r => r.Owner != null && r.Owner.Username == ownerName && r.Name == repoName);
+            .Include(r => r.Organization)
+            .FirstOrDefaultAsync(r => 
+                (r.Owner != null && r.Owner.Username == ownerName && r.Name == repoName) ||
+                (r.Organization != null && r.Organization.Name == ownerName && r.Name == repoName));
 
         if (repository == null)
         {
@@ -265,7 +268,65 @@ public class SshServerBackgroundService : BackgroundService
         }
 
         // Permission check
-        if (repository.OwnerId != state.UserId)
+        bool isWriteAction = commandName.Equals("git-receive-pack", StringComparison.OrdinalIgnoreCase);
+        int userId = state.UserId;
+
+        string? maxAccess = null;
+        if (repository.OwnerId == userId)
+        {
+            maxAccess = "Admin";
+        }
+        else if (repository.OrganizationId.HasValue)
+        {
+            bool isOrgOwner = await dbContext.OrganizationMembers.AnyAsync(om => 
+                om.OrganizationId == repository.OrganizationId.Value && 
+                om.UserId == userId && 
+                om.Role == "Owner");
+
+            if (isOrgOwner)
+            {
+                maxAccess = "Admin";
+            }
+            else
+            {
+                var teamIds = await dbContext.TeamMembers
+                    .Where(tm => tm.UserId == userId && tm.Team.OrganizationId == repository.OrganizationId.Value)
+                    .Select(tm => tm.TeamId)
+                    .ToListAsync();
+
+                var permissions = await dbContext.RepositoryPermissions
+                    .Where(rp => rp.RepositoryId == repository.Id && 
+                                 (rp.UserId == userId || (rp.TeamId != null && teamIds.Contains(rp.TeamId.Value))))
+                    .Select(rp => rp.AccessLevel)
+                    .ToListAsync();
+
+                if (permissions.Any())
+                {
+                    if (permissions.Contains("Admin")) maxAccess = "Admin";
+                    else if (permissions.Contains("Write")) maxAccess = "Write";
+                    else if (permissions.Contains("Read")) maxAccess = "Read";
+                }
+            }
+        }
+
+        bool hasAccess = false;
+        if (isWriteAction)
+        {
+            hasAccess = (maxAccess == "Admin" || maxAccess == "Write");
+        }
+        else
+        {
+            if (repository.IsPrivate)
+            {
+                hasAccess = (maxAccess == "Admin" || maxAccess == "Write" || maxAccess == "Read");
+            }
+            else
+            {
+                hasAccess = true;
+            }
+        }
+
+        if (!hasAccess)
         {
             byte[] denied = System.Text.Encoding.UTF8.GetBytes("Permission denied\r\n");
             e.Channel.SendData(denied);

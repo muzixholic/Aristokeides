@@ -1,4 +1,10 @@
 @inherits LayoutComponentBase
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="page">
     <div class="navbar">
@@ -7,6 +13,23 @@
             <AuthorizeView>
                 <Authorized>
                     <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">대시보드</NavLink>
+                    
+                    @if (userOrganizations != null && userOrganizations.Any())
+                    {
+                        <div class="nav-dropdown" style="position: relative; display: inline-block; margin-left: 12px;">
+                            <button class="nav-link-dropdown-btn" style="background: none; border: none; font-size: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0 8px; font-weight: 500; height: 100%;">
+                                내 조직 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                            <div class="nav-dropdown-content" style="display: none; position: absolute; background-color: #ffffff; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; border-radius: 6px; z-index: 100; top: 100%; left: 0; padding: 6px 0;">
+                                @foreach (var org in userOrganizations)
+                                {
+                                    <a href="/orgs/@org.Name" style="color: #374151; padding: 8px 16px; text-decoration: none; display: block; font-size: 14px; text-align: left; transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor='transparent'">
+                                        @org.Name
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
                 </Authorized>
             </AuthorizeView>
         </div>
@@ -43,3 +66,39 @@
         </div>
     </footer>
 </div>
+
+<style>
+    .nav-dropdown:hover .nav-dropdown-content {
+        display: block !important;
+    }
+</style>
+
+@code {
+    private List<Organization> userOrganizations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+                {
+                    userOrganizations = await DbContext.OrganizationMembers
+                        .Include(om => om.Organization)
+                        .Where(om => om.UserId == userId)
+                        .Select(om => om.Organization)
+                        .OrderBy(o => o.Name)
+                        .ToListAsync();
+                }
+            }
+        }
+        catch
+        {
+            // Fail silently to avoid breaking the layout if DB goes wrong temporarily
+        }
+    }
+}

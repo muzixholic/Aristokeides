@@ -29,10 +29,16 @@
     <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="NewRepoForm">
         <DataAnnotationsValidator />
 
-        <!-- Owner (read-only) -->
+        <!-- Owner Selector -->
         <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">소유자</label>
-            <input type="text" value="@currentUsername" disabled style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; color: #6b7280; font-size: 14px;" />
+            <label for="owner-selector" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">소유자</label>
+            <select id="owner-selector" @bind="selectedOwner" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #ffffff; font-size: 14px; box-sizing: border-box;">
+                <option value="me">@currentUsername (Me)</option>
+                @foreach (var org in myOrganizations)
+                {
+                    <option value="org-@org.Id">@org.Name (Organization)</option>
+                }
+            </select>
         </div>
 
         <!-- Repository Name -->
@@ -76,6 +82,8 @@
     private int currentUserId;
     private bool isSubmitting = false;
     private string? errorMessage;
+    private List<Organization> myOrganizations = new();
+    private string selectedOwner = "me";
 
     private RepoFormModel model = new();
 
@@ -104,6 +112,11 @@
                 if (userIdClaim != null)
                 {
                     currentUserId = int.Parse(userIdClaim.Value);
+                    myOrganizations = await DbContext.OrganizationMembers
+                        .Include(om => om.Organization)
+                        .Where(om => om.UserId == currentUserId && om.Role == "Owner")
+                        .Select(om => om.Organization!)
+                        .ToListAsync();
                 }
             }
         }
@@ -120,10 +133,31 @@
 
         try
         {
+            int? targetOrgId = null;
+            Organization? targetOrg = null;
+            if (selectedOwner.StartsWith("org-"))
+            {
+                var orgIdStr = selectedOwner.Substring(4);
+                if (int.TryParse(orgIdStr, out var parsedId))
+                {
+                    targetOrgId = parsedId;
+                    targetOrg = myOrganizations.FirstOrDefault(o => o.Id == parsedId);
+                }
+            }
+
             // 중복 검사
             var nameLower = model.Name.ToLower();
-            var isDuplicate = await DbContext.Repositories
-                .AnyAsync(r => r.OwnerId == currentUserId && r.Name.ToLower() == nameLower);
+            bool isDuplicate;
+            if (targetOrgId.HasValue)
+            {
+                isDuplicate = await DbContext.Repositories
+                    .AnyAsync(r => r.OrganizationId == targetOrgId && r.Name.ToLower() == nameLower);
+            }
+            else
+            {
+                isDuplicate = await DbContext.Repositories
+                    .AnyAsync(r => r.OwnerId == currentUserId && r.Name.ToLower() == nameLower);
+            }
 
             if (isDuplicate)
             {
@@ -137,7 +171,8 @@
                 Id = Guid.NewGuid(),
                 Name = model.Name,
                 Description = model.Description,
-                OwnerId = currentUserId,
+                OwnerId = targetOrgId.HasValue ? null : currentUserId,
+                OrganizationId = targetOrgId,
                 Status = "Creating",
                 IsPrivate = model.IsPrivate,
                 PrimaryLanguage = null, // 언어는 첫 커밋 분석 후 설정되거나 빈 값
@@ -162,7 +197,14 @@
             await CreationChannel.EnqueueAsync(repository.Id);
 
             // 완료 후 저장소 페이지로 이동
-            Navigation.NavigateTo($"/{currentUsername}/{model.Name}");
+            if (targetOrgId.HasValue && targetOrg != null)
+            {
+                Navigation.NavigateTo($"/orgs/{targetOrg.Name}/repos/{model.Name}");
+            }
+            else
+            {
+                Navigation.NavigateTo($"/{currentUsername}/{model.Name}");
+            }
         }
         catch (Exception ex)
         {

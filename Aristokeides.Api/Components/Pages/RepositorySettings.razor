@@ -26,93 +26,222 @@
     </div>
 </div>
 
-<div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+<div style="max-width: 1000px; margin: 0 auto; display: flex; gap: 24px; flex-wrap: wrap;">
     
     @if (isLoading)
     {
-        <p>설정을 불러오는 중...</p>
+        <div style="flex: 1; padding: 48px; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>설정을 불러오는 중...</div>
+        </div>
     }
     else if (repository == null)
     {
-        <div style="background-color: #fee2e2; color: #ef4444; padding: 16px; border-radius: 6px; border: 1px solid #fca5a5;">
-            저장소를 찾을 수 없거나 접근 권한이 없습니다.
+        <div style="flex: 1;">
+            <div style="background-color: #fee2e2; color: #ef4444; padding: 16px; border-radius: 6px; border: 1px solid #fca5a5;">
+                저장소를 찾을 수 없거나 설정 접근 권한이 없습니다. (저장소 소유자 또는 조직 소유자만 설정에 접근할 수 있습니다)
+            </div>
         </div>
     }
     else
     {
-        <!-- Settings Form -->
-        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
-            <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">일반 설정</h2>
-
-            @if (successMessage != null)
-            {
-                <div style="background-color: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 6px; border: 1px solid #6ee7b7; margin-bottom: 20px; font-size: 14px;">
-                    <i class="bi bi-check-circle-fill"></i> @successMessage
-                </div>
-            }
-
-            @if (errorMessage != null)
-            {
-                <div style="background-color: #fee2e2; color: #ef4444; padding: 12px 16px; border-radius: 6px; border: 1px solid #fca5a5; margin-bottom: 20px; font-size: 14px;">
-                    <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
-                </div>
-            }
-
-            <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="SettingsForm">
-                <DataAnnotationsValidator />
-
-                <!-- Repo Name -->
-                <div style="margin-bottom: 16px;">
-                    <label for="name" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">저장소 이름</label>
-                    <InputText id="name" @bind-Value="model.Name" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
-                    <ValidationMessage For="@(() => model.Name)" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
-                </div>
-
-                <!-- Description -->
-                <div style="margin-bottom: 16px;">
-                    <label for="description" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">설명</label>
-                    <InputTextArea id="description" @bind-Value="model.Description" rows="4" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: inherit; box-sizing: border-box;" />
-                </div>
-
-                <!-- Privacy -->
-                <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="display: flex; align-items: flex-start; gap: 12px;">
-                        <InputCheckbox id="is-private" @bind-Value="model.IsPrivate" style="margin-top: 4px; width: 16px; height: 16px; cursor: pointer;" />
-                        <div>
-                            <label for="is-private" style="font-weight: 600; font-size: 14px; color: #374151; cursor: pointer; display: block;">비공개 저장소로 설정 (Private)</label>
-                            <span style="font-size: 12px; color: #6b7280; display: block; margin-top: 2px;">체크 시 비공개 저장소로 설정되어 회원님만 접근할 수 있습니다.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end;">
-                    <button type="submit" disabled="@isSubmitting" style="padding: 10px 20px; background: var(--accent, #2563eb); border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 14px; cursor: @(isSubmitting ? "not-allowed" : "pointer"); opacity: @(isSubmitting ? 0.7 : 1);">
-                        @(isSubmitting ? "저장 중..." : "변경 사항 저장")
-                    </button>
-                </div>
-            </EditForm>
+        <!-- Left Navigation Sidebar -->
+        <div style="width: 240px; display: flex; flex-direction: column; gap: 8px;">
+            <button @onclick='() => ChangeTab("general")' style="text-align: left; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s; background: @(activeTab == "general" ? "#eff6ff" : "transparent"); color: @(activeTab == "general" ? "#2563eb" : "#4b5563");">
+                일반 설정
+            </button>
+            <button @onclick='() => ChangeTab("collaborators")' style="text-align: left; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s; background: @(activeTab == "collaborators" ? "#eff6ff" : "transparent"); color: @(activeTab == "collaborators" ? "#2563eb" : "#4b5563");">
+                Collaborators & Permissions
+            </button>
         </div>
 
-        <!-- Danger Zone -->
-        <div style="border: 1px solid #fca5a5; border-radius: 8px; padding: 24px; background: #fff5f5;">
-            <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: var(--destructive, #ef4444);">Danger Zone</h2>
-            <p style="color: #6b7280; font-size: 13px; margin-bottom: 20px; line-height: 1.5;">저장소를 삭제하면 복구할 수 없습니다. 신중히 결정해 주세요.</p>
+        <!-- Right Content Panel -->
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 32px;">
             
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="font-size: 15px; font-weight: 600; margin: 0; color: #111827;">이 저장소 삭제</h3>
-                    <p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0;">이 저장소를 데이터베이스 및 디스크에서 영구적으로 삭제합니다.</p>
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div style="background-color: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 6px; border: 1px solid #6ee7b7; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px; flex-shrink: 0;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>@successMessage</span>
                 </div>
-                <button type="button" @onclick="() => showDeleteModal = true" style="padding: 10px 18px; background: var(--destructive, #ef4444); color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: opacity 0.2s;">
-                    저장소 삭제
-                </button>
-            </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="background-color: #fee2e2; color: #ef4444; padding: 12px 16px; border-radius: 6px; border: 1px solid #fca5a5; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px; flex-shrink: 0;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    <span>@errorMessage</span>
+                </div>
+            }
+
+            @if (activeTab == "general")
+            {
+                <!-- General Settings Form -->
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+                    <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">일반 설정</h2>
+
+                    <EditForm Model="@model" OnValidSubmit="HandleSubmit" FormName="SettingsForm">
+                        <DataAnnotationsValidator />
+
+                        <!-- Repo Name -->
+                        <div style="margin-bottom: 16px;">
+                            <label for="name" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">저장소 이름</label>
+                            <InputText id="name" @bind-Value="model.Name" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+                            <ValidationMessage For="@(() => model.Name)" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                        </div>
+
+                        <!-- Description -->
+                        <div style="margin-bottom: 16px;">
+                            <label for="description" style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">설명</label>
+                            <InputTextArea id="description" @bind-Value="model.Description" rows="4" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: inherit; box-sizing: border-box;" />
+                        </div>
+
+                        <!-- Privacy -->
+                        <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <InputCheckbox id="is-private" @bind-Value="model.IsPrivate" style="margin-top: 4px; width: 16px; height: 16px; cursor: pointer;" />
+                                <div>
+                                    <label for="is-private" style="font-weight: 600; font-size: 14px; color: #374151; cursor: pointer; display: block;">비공개 저장소로 설정 (Private)</label>
+                                    <span style="font-size: 12px; color: #6b7280; display: block; margin-top: 2px;">체크 시 비공개 저장소로 설정되어 권한을 획득한 멤버만 접근할 수 있습니다.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" disabled="@isSubmitting" style="padding: 10px 20px; background: var(--accent, #2563eb); border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 14px; cursor: @(isSubmitting ? "not-allowed" : "pointer"); opacity: @(isSubmitting ? 0.7 : 1);">
+                                @(isSubmitting ? "저장 중..." : "변경 사항 저장")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+
+                <!-- Danger Zone -->
+                <div style="border: 1px solid #fca5a5; border-radius: 8px; padding: 24px; background: #fff5f5;">
+                    <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: var(--destructive, #ef4444);">Danger Zone</h2>
+                    <p style="color: #6b7280; font-size: 13px; margin-bottom: 20px; line-height: 1.5;">저장소를 삭제하면 복구할 수 없습니다. 신중히 결정해 주세요.</p>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="font-size: 15px; font-weight: 600; margin: 0; color: #111827;">이 저장소 삭제</h3>
+                            <p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0;">이 저장소를 데이터베이스 및 디스크에서 영구적으로 삭제합니다.</p>
+                        </div>
+                        <button type="button" @onclick="() => showDeleteModal = true" style="padding: 10px 18px; background: var(--destructive, #ef4444); color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: opacity 0.2s;">
+                            저장소 삭제
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (activeTab == "collaborators")
+            {
+                <!-- Collaborators & Permissions Management -->
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+                    <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">협업자 및 권한 설정</h2>
+                    
+                    <!-- Add User Permission Form -->
+                    <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px 0;">개인 협업자 추가</h3>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <input type="text" @bind="collabUsername" placeholder="사용자명 입력" style="flex: 2; min-width: 150px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+                            
+                            <select @bind="collabAccessLevel" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: white;">
+                                <option value="Read">Read</option>
+                                <option value="Write">Write</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                            
+                            <button @onclick="AddUserPermission" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">추가</button>
+                        </div>
+                    </div>
+
+                    <!-- Add Team Permission Form (Only for Organization-owned repositories) -->
+                    @if (repository.OrganizationId.HasValue)
+                    {
+                        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                            <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px 0;">팀 권한 추가</h3>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <select @bind="selectedTeamId" style="flex: 2; min-width: 150px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: white;">
+                                    <option value="0">-- 대상 팀 선택 --</option>
+                                    @foreach (var team in orgTeams)
+                                    {
+                                        <option value="@team.Id">@team.Name</option>
+                                    }
+                                </select>
+                                
+                                <select @bind="teamAccessLevel" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: white;">
+                                    <option value="Read">Read</option>
+                                    <option value="Write">Write</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                                
+                                <button @onclick="AddTeamPermission" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">추가</button>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Permissions List -->
+                    <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin: 24px 0 12px 0;">부여된 권한 목록</h3>
+                    @if (!permissions.Any())
+                    {
+                        <p style="color: #6b7280; font-size: 13px; text-align: center; padding: 24px 0;">할당된 개별/팀 권한이 없습니다. (소유자는 묵시적으로 마스터 권한을 가집니다)</p>
+                    }
+                    else
+                    {
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #f3f4f6; color: #4b5563; font-weight: 600;">
+                                        <th style="padding: 10px 12px;">유형</th>
+                                        <th style="padding: 10px 12px;">대상</th>
+                                        <th style="padding: 10px 12px;">권한 레벨</th>
+                                        <th style="padding: 10px 12px; text-align: right;">액션</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var perm in permissions)
+                                    {
+                                        <tr style="border-bottom: 1px solid #f9fafb;">
+                                            <td style="padding: 12px;">
+                                                @if (perm.UserId.HasValue)
+                                                {
+                                                    <span style="background: #e0f2fe; color: #0369a1; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">개인</span>
+                                                }
+                                                else if (perm.TeamId.HasValue)
+                                                {
+                                                    <span style="background: #fef3c7; color: #d97706; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">팀</span>
+                                                }
+                                            </td>
+                                            <td style="padding: 12px; font-weight: 600; color: #374151;">
+                                                @(perm.UserId.HasValue ? perm.User?.Username : perm.Team?.Name)
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                <span style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: @GetAccessLevelBadgeColor(perm.AccessLevel); color: @GetAccessLevelTextColor(perm.AccessLevel);">
+                                                    @perm.AccessLevel
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px; text-align: right;">
+                                                <button @onclick="() => RevokePermission(perm)" style="padding: 4px 8px; border: 1px solid #fca5a5; background: #fff5f5; color: #ef4444; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;" class="btn-revoke">
+                                                    권한 취소
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
+
         </div>
     }
 </div>
 
 <!-- Safe Deletion Modal -->
-@if (showDeleteModal)
+@if (showDeleteModal && repository != null)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
         <div style="background: #ffffff; width: 100%; max-width: 500px; padding: 24px; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
@@ -140,6 +269,20 @@
     </div>
 }
 
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    input:focus, select:focus, textarea:focus {
+        border-color: #2563eb !important;
+    }
+    .btn-revoke:hover {
+        background-color: #ef4444 !important;
+        color: white !important;
+    }
+</style>
+
 @code {
     [Parameter]
     public string Username { get; set; } = "";
@@ -159,9 +302,21 @@
 
     private SettingsFormModel model = new();
 
+    // Tab control
+    private string activeTab = "general";
+
     // Deletion Modal States
     private bool showDeleteModal = false;
     private string deleteConfirmText = string.Empty;
+
+    // Collaborators Tab Data
+    private List<RepositoryPermission> permissions = new();
+    private List<Team> orgTeams = new();
+    
+    private string collabUsername = "";
+    private string collabAccessLevel = "Read";
+    private int selectedTeamId = 0;
+    private string teamAccessLevel = "Read";
 
     public class SettingsFormModel
     {
@@ -179,14 +334,11 @@
     {
         isLoading = true;
         errorMessage = null;
+        successMessage = null;
 
         if (Success)
         {
             successMessage = "저장소 설정이 성공적으로 저장되었습니다.";
-        }
-        else
-        {
-            successMessage = null;
         }
 
         try
@@ -201,22 +353,45 @@
                     currentUserId = int.Parse(userIdClaim.Value);
                 }
 
+                // 1. 저장소 조회 (개인 또는 조직)
                 repository = await DbContext.Repositories
                     .Include(r => r.Owner)
-                    .FirstOrDefaultAsync(r => r.Owner!.Username == Username && r.Name == RepoName);
+                    .Include(r => r.Organization)
+                    .FirstOrDefaultAsync(r => 
+                        (r.Owner != null && r.Owner.Username == Username && r.Name == RepoName) ||
+                        (r.Organization != null && r.Organization.Name == Username && r.Name == RepoName));
 
                 if (repository != null)
                 {
-                    // 권한 확인 (소유자만 진입 가능)
-                    if (repository.OwnerId != currentUserId)
+                    // 2. 권한 검사 (저장소 소유자 또는 조직 소유자만 설정 접근 허용)
+                    bool hasSettingsAccess = false;
+                    if (repository.OwnerId == currentUserId)
                     {
-                        repository = null; // 권한 없음으로 비노출 처리
+                        hasSettingsAccess = true;
+                    }
+                    else if (repository.OrganizationId.HasValue)
+                    {
+                        bool isOrgOwner = await DbContext.OrganizationMembers.AnyAsync(om =>
+                            om.OrganizationId == repository.OrganizationId.Value &&
+                            om.UserId == currentUserId &&
+                            om.Role == "Owner");
+                        if (isOrgOwner)
+                        {
+                            hasSettingsAccess = true;
+                        }
+                    }
+
+                    if (!hasSettingsAccess)
+                    {
+                        repository = null; // 권한 없음 처리
                     }
                     else
                     {
                         model.Name = repository.Name;
                         model.Description = repository.Description;
                         model.IsPrivate = repository.IsPrivate;
+
+                        await LoadCollaboratorDataAsync();
                     }
                 }
             }
@@ -229,6 +404,31 @@
         {
             isLoading = false;
         }
+    }
+
+    private async Task LoadCollaboratorDataAsync()
+    {
+        if (repository == null) return;
+
+        permissions = await DbContext.RepositoryPermissions
+            .Include(rp => rp.User)
+            .Include(rp => rp.Team)
+            .Where(rp => rp.RepositoryId == repository.Id)
+            .ToListAsync();
+
+        if (repository.OrganizationId.HasValue)
+        {
+            orgTeams = await DbContext.Teams
+                .Where(t => t.OrganizationId == repository.OrganizationId.Value)
+                .ToListAsync();
+        }
+    }
+
+    private void ChangeTab(string tab)
+    {
+        activeTab = tab;
+        errorMessage = null;
+        successMessage = null;
     }
 
     private async Task HandleSubmit()
@@ -245,10 +445,20 @@
 
             if (isNameChanged)
             {
-                // 이름 중복 검사
                 var nameLower = model.Name.ToLower();
-                var isDuplicate = await DbContext.Repositories
-                    .AnyAsync(r => r.OwnerId == currentUserId && r.Name.ToLower() == nameLower && r.Id != repository.Id);
+                
+                // 이름 중복 검사 (개인 저장소와 조직 저장소 각각 맞추어 처리)
+                bool isDuplicate = false;
+                if (repository.OwnerId.HasValue)
+                {
+                    isDuplicate = await DbContext.Repositories
+                        .AnyAsync(r => r.OwnerId == repository.OwnerId && r.Name.ToLower() == nameLower && r.Id != repository.Id);
+                }
+                else if (repository.OrganizationId.HasValue)
+                {
+                    isDuplicate = await DbContext.Repositories
+                        .AnyAsync(r => r.OrganizationId == repository.OrganizationId && r.Name.ToLower() == nameLower && r.Id != repository.Id);
+                }
 
                 if (isDuplicate)
                 {
@@ -277,7 +487,6 @@
 
             if (isNameChanged)
             {
-                // 이름 변경 시 URL 구조 변경으로 리다이렉트 (D-03을 만족하며 설정 화면을 새로 띄움)
                 Navigation.NavigateTo($"/{Username}/{model.Name}/settings?success=true");
             }
             else
@@ -313,11 +522,10 @@
                 Directory.Delete(path, true);
             }
 
-            // DB 엔티티 삭제 (Cascade 제약조건에 의해 이슈, PR 등 함께 지워짐)
+            // DB 엔티티 삭제
             DbContext.Repositories.Remove(repository);
             await DbContext.SaveChangesAsync();
 
-            // 대시보드로 이동
             Navigation.NavigateTo("/dashboard");
         }
         catch (Exception ex)
@@ -326,5 +534,173 @@
             showDeleteModal = false;
             deleteConfirmText = string.Empty;
         }
+    }
+
+    private async Task AddUserPermission()
+    {
+        if (repository == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        var username = collabUsername?.Trim();
+        if (string.IsNullOrEmpty(username))
+        {
+            errorMessage = "추가할 협업자의 사용자명을 입력해 주세요.";
+            return;
+        }
+
+        try
+        {
+            var targetUser = await DbContext.Users
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+            if (targetUser == null)
+            {
+                errorMessage = $"존재하지 않는 사용자입니다: {username}";
+                return;
+            }
+
+            if (targetUser.Id == repository.OwnerId)
+            {
+                errorMessage = "저장소 소유자는 이미 모든 권한을 가지고 있습니다.";
+                return;
+            }
+
+            // 조직 저장소인 경우 이미 조직 소유자인지 확인
+            if (repository.OrganizationId.HasValue)
+            {
+                bool isOrgOwner = await DbContext.OrganizationMembers.AnyAsync(om => 
+                    om.OrganizationId == repository.OrganizationId.Value && 
+                    om.UserId == targetUser.Id && 
+                    om.Role == "Owner");
+
+                if (isOrgOwner)
+                {
+                    errorMessage = "해당 사용자는 조직의 소유자(Owner)이므로 이미 무제한 권한을 보유하고 있습니다.";
+                    return;
+                }
+            }
+
+            // 이미 명시된 권한이 있는지 확인
+            var existingPerm = permissions.FirstOrDefault(p => p.UserId == targetUser.Id);
+            if (existingPerm != null)
+            {
+                existingPerm.AccessLevel = collabAccessLevel;
+                successMessage = $"'{targetUser.Username}'님의 권한 수준을 '{collabAccessLevel}'(으)로 업데이트했습니다.";
+            }
+            else
+            {
+                var newPerm = new RepositoryPermission
+                {
+                    RepositoryId = repository.Id,
+                    UserId = targetUser.Id,
+                    AccessLevel = collabAccessLevel
+                };
+                DbContext.RepositoryPermissions.Add(newPerm);
+                successMessage = $"'{targetUser.Username}'님에게 '{collabAccessLevel}' 권한을 성공적으로 부여했습니다.";
+            }
+
+            await DbContext.SaveChangesAsync();
+            collabUsername = "";
+            collabAccessLevel = "Read";
+
+            await LoadCollaboratorDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"협업자 추가 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task AddTeamPermission()
+    {
+        if (repository == null || selectedTeamId == 0) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var team = orgTeams.FirstOrDefault(t => t.Id == selectedTeamId);
+            if (team == null)
+            {
+                errorMessage = "팀 정보를 찾을 수 없습니다.";
+                return;
+            }
+
+            var existingPerm = permissions.FirstOrDefault(p => p.TeamId == selectedTeamId);
+            if (existingPerm != null)
+            {
+                existingPerm.AccessLevel = teamAccessLevel;
+                successMessage = $"팀 '{team.Name}'의 권한 수준을 '{teamAccessLevel}'(으)로 업데이트했습니다.";
+            }
+            else
+            {
+                var newPerm = new RepositoryPermission
+                {
+                    RepositoryId = repository.Id,
+                    TeamId = selectedTeamId,
+                    AccessLevel = teamAccessLevel
+                };
+                DbContext.RepositoryPermissions.Add(newPerm);
+                successMessage = $"팀 '{team.Name}'에 '{teamAccessLevel}' 권한을 성공적으로 부여했습니다.";
+            }
+
+            await DbContext.SaveChangesAsync();
+            selectedTeamId = 0;
+            teamAccessLevel = "Read";
+
+            await LoadCollaboratorDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"팀 권한 추가 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private async Task RevokePermission(RepositoryPermission permission)
+    {
+        if (repository == null || permission == null) return;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var dbPerm = await DbContext.RepositoryPermissions
+                .FirstOrDefaultAsync(rp => rp.Id == permission.Id);
+
+            if (dbPerm != null)
+            {
+                DbContext.RepositoryPermissions.Remove(dbPerm);
+                await DbContext.SaveChangesAsync();
+                successMessage = "권한을 성공적으로 취소했습니다.";
+                await LoadCollaboratorDataAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"권한 취소 중 오류가 발생했습니다: {ex.Message}";
+        }
+    }
+
+    private string GetAccessLevelBadgeColor(string level)
+    {
+        return level switch
+        {
+            "Admin" => "#fee2e2",
+            "Write" => "#fef3c7",
+            "Read" => "#e0f2fe",
+            _ => "#f3f4f6"
+        };
+    }
+
+    private string GetAccessLevelTextColor(string level)
+    {
+        return level switch
+        {
+            "Admin" => "#ef4444",
+            "Write" => "#d97706",
+            "Read" => "#0369a1",
+            _ => "#4b5563"
+        };
     }
 }

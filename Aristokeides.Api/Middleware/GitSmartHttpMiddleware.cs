@@ -37,7 +37,7 @@ public class GitSmartHttpMiddleware
             return;
         }
 
-        var username = segments[0];
+        var ownerOrOrgName = segments[0];
         var repoNameWithGit = segments[1];
         var repoName = repoNameWithGit.Substring(0, repoNameWithGit.Length - 4);
         var gitPathInfo = "/" + string.Join("/", segments.Skip(1)); // keeping repo.git/...
@@ -61,7 +61,10 @@ public class GitSmartHttpMiddleware
         // Verify repo exists and user has access
         var repo = await db.Repositories
             .Include(r => r.Owner)
-            .FirstOrDefaultAsync(r => r.Owner!.Username == username && r.Name == repoName);
+            .Include(r => r.Organization)
+            .FirstOrDefaultAsync(r => 
+                (r.Owner != null && r.Owner.Username == ownerOrOrgName && r.Name == repoName) ||
+                (r.Organization != null && r.Organization.Name == ownerOrOrgName && r.Name == repoName));
 
         if (repo == null)
         {
@@ -69,15 +72,87 @@ public class GitSmartHttpMiddleware
             return;
         }
 
-        // Currently, basic check: only owner can access
-        if (repo.OwnerId != userId)
+        // Determine if this is a write/push operation
+        bool isWriteAction = false;
+        if (context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
         {
-            context.Response.StatusCode = 403;
-            return;
+            if (segments.Length >= 3 && segments[2].Equals("git-receive-pack", StringComparison.OrdinalIgnoreCase))
+            {
+                isWriteAction = true;
+            }
+        }
+        else if (context.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+        {
+            if (context.Request.QueryString.HasValue && context.Request.QueryString.Value!.Contains("service=git-receive-pack"))
+            {
+                isWriteAction = true;
+            }
+        }
+
+        // Determine maximum access level
+        string? maxAccess = null;
+        if (repo.OwnerId == userId)
+        {
+            maxAccess = "Admin";
+        }
+        else if (repo.OrganizationId.HasValue)
+        {
+            bool isOrgOwner = await db.OrganizationMembers.AnyAsync(om => 
+                om.OrganizationId == repo.OrganizationId.Value && 
+                om.UserId == userId && 
+                om.Role == "Owner");
+
+            if (isOrgOwner)
+            {
+                maxAccess = "Admin";
+            }
+            else
+            {
+                var teamIds = await db.TeamMembers
+                    .Where(tm => tm.UserId == userId && tm.Team.OrganizationId == repo.OrganizationId.Value)
+                    .Select(tm => tm.TeamId)
+                    .ToListAsync();
+
+                var permissions = await db.RepositoryPermissions
+                    .Where(rp => rp.RepositoryId == repo.Id && 
+                                 (rp.UserId == userId || (rp.TeamId != null && teamIds.Contains(rp.TeamId.Value))))
+                    .Select(rp => rp.AccessLevel)
+                    .ToListAsync();
+
+                if (permissions.Any())
+                {
+                    if (permissions.Contains("Admin")) maxAccess = "Admin";
+                    else if (permissions.Contains("Write")) maxAccess = "Write";
+                    else if (permissions.Contains("Read")) maxAccess = "Read";
+                }
+            }
+        }
+
+        // Apply access control rules
+        if (isWriteAction)
+        {
+            // Push requires Admin or Write
+            if (maxAccess != "Admin" && maxAccess != "Write")
+            {
+                context.Response.StatusCode = 403;
+                return;
+            }
+        }
+        else
+        {
+            // Pull/Clone/Fetch: Private repositories require at least Read
+            if (repo.IsPrivate)
+            {
+                if (maxAccess != "Admin" && maxAccess != "Write" && maxAccess != "Read")
+                {
+                    context.Response.StatusCode = 403;
+                    return;
+                }
+            }
         }
 
         var basePath = Path.GetFullPath("GitRepos");
-        var gitProjectRoot = Path.Combine(basePath, username);
+        var gitProjectRoot = Path.Combine(basePath, ownerOrOrgName);
         var physicalRepoPath = Path.Combine(gitProjectRoot, repoNameWithGit);
 
         // HTTP Push인지 확인하고, 실행 전 refs 수집
@@ -120,7 +195,7 @@ public class GitSmartHttpMiddleware
         processStartInfo.EnvironmentVariables["GIT_PROJECT_ROOT"] = gitProjectRoot;
         processStartInfo.EnvironmentVariables["PATH_INFO"] = gitPathInfo;
         processStartInfo.EnvironmentVariables["GIT_HTTP_EXPORT_ALL"] = "1";
-        processStartInfo.EnvironmentVariables["REMOTE_USER"] = username;
+        processStartInfo.EnvironmentVariables["REMOTE_USER"] = ownerOrOrgName;
         processStartInfo.EnvironmentVariables["REQUEST_METHOD"] = context.Request.Method;
         processStartInfo.EnvironmentVariables["CONTENT_TYPE"] = context.Request.ContentType ?? "";
         
