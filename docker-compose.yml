@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  aristokeides:
+    build: .
+    image: aristokeides:latest
+    container_name: aristokeides
+    restart: unless-stopped
+    ports:
+      - "8080:8080" # Web UI / HTTP Git traffic
+      - "2222:2222" # SSH Git traffic
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # You can override database settings via environment variables here:
+      # - Database__Provider=PostgreSQL
+      # - Database__ConnectionString=Host=db;Port=5432;Database=aristokeides;Username=postgres;Password=postgres
+    volumes:
+      - ./data/repositories:/app/repositories
+      # If using SQLite, persist the database file
+      - ./data/aristokeides.db:/app/aristokeides.db
+      # Persist the configuration file so settings survive container restarts
+      - ./data/appsettings.json:/app/appsettings.json
+
+  # Uncomment below to use PostgreSQL instead of SQLite
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: aristokeides-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: aristokeides
+  #   volumes:
+  #     - ./data/postgres:/var/lib/postgresql/data

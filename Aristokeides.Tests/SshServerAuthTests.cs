@@ -17,6 +17,7 @@ using Xunit;
 
 namespace Aristokeides.Tests;
 
+[Collection("SshTests")]
 public class SshServerAuthTests
 {
     private static (string publicKey, byte[] privateKeyBytes) GenerateEcdsaKeyPair()
@@ -119,7 +120,7 @@ public class SshServerAuthTests
     [Fact]
     public async Task PathTraversal_ShouldBeRejected()
     {
-        int testPort = 2227;
+        int testPort = 12230;
         var (publicKey, privateKeyBytes) = GenerateEcdsaKeyPair();
         string fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(publicKey);
 
@@ -149,7 +150,7 @@ public class SshServerAuthTests
         var service = new SshServerBackgroundService(serviceProvider, configuration, new TestLogger<SshServerBackgroundService>());
         var cts = new CancellationTokenSource();
         await service.StartAsync(cts.Token);
-        await Task.Delay(500);
+        await Task.Delay(1500);
 
         try
         {

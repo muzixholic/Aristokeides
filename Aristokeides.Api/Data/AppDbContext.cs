@@ -8,7 +8,7 @@ namespace Aristokeides.Api.Data;
 /// </summary>
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public AppDbContext(DbContextOptions options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Repository> Repositories => Set<Repository>();

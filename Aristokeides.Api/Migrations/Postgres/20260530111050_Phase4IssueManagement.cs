@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Aristokeides.Api.Migrations
+namespace Aristokeides.Api.Migrations.Postgres
 {
     /// <inheritdoc />
     public partial class Phase4IssueManagement : Migration

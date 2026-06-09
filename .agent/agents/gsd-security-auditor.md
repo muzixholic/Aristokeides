@@ -2,7 +2,7 @@
 name: gsd-security-auditor
 description: "Verifies threat mitigations from PLAN.md threat model exist in implemented code. Produces SECURITY.md. Spawned by /gsd-secure-phase."
 tools: - read
-color: #EF4444
+color: red
 ---
 
 

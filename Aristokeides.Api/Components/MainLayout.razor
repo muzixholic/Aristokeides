@@ -15,6 +15,11 @@
                 <Authorized>
                     <span>@context.User.Identity?.Name 님</span>
                     <NavLink class="btn-nav-accent" href="/repositories/new">새 저장소 만들기</NavLink>
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="adminContext">
+                            <NavLink class="nav-link text-danger" href="/admin/settings">관리자 설정</NavLink>
+                        </Authorized>
+                    </AuthorizeView>
                     <NavLink class="nav-link" href="/settings">설정</NavLink>
                     <a class="nav-link" href="/api/auth/logout">로그아웃</a>
                 </Authorized>

@@ -11,8 +11,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseStaticWebAssets();
 
 // --- Database ---
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var dbProvider = builder.Configuration["Database:Provider"] ?? "SQLite";
+var dbConnectionString = builder.Configuration["Database:ConnectionString"] ?? "Data Source=aristokeides.db";
+
+switch (dbProvider.ToLowerInvariant())
+{
+    case "postgresql":
+    case "postgres":
+        builder.Services.AddDbContext<AppDbContext, PostgresAppDbContext>(options =>
+            options.UseNpgsql(dbConnectionString, x => x.MigrationsAssembly("Aristokeides.Api")));
+        break;
+    case "mysql":
+    case "mariadb":
+        builder.Services.AddDbContext<AppDbContext, MysqlAppDbContext>(options =>
+            options.UseMySQL(dbConnectionString, x => x.MigrationsAssembly("Aristokeides.Api")));
+        break;
+    case "sqlite":
+    default:
+        builder.Services.AddDbContext<AppDbContext, SqliteAppDbContext>(options =>
+            options.UseSqlite(dbConnectionString, x => x.MigrationsAssembly("Aristokeides.Api")));
+        break;
+}
 
 // --- Authentication (JWT and Basic) ---
 builder.Services.AddAuthentication(options =>
@@ -66,6 +85,8 @@ builder.Services.AddSingleton<Aristokeides.Api.Services.Ssh.SshSignatureVerifica
 builder.Services.AddScoped<GitBrowserService>();
 builder.Services.AddScoped<IssueService>();
 builder.Services.AddScoped<PullRequestService>();
+builder.Services.AddScoped<SetupService>();
+builder.Services.AddScoped<AdminSettingsService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
@@ -115,11 +136,16 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+var isInstalled = app.Configuration.GetValue<bool>("IsInstalled");
+
 // --- Auto-Migration on startup ---
-using (var scope = app.Services.CreateScope())
+if (isInstalled)
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await dbContext.Database.MigrateAsync();
+    }
 }
 
 // --- HTTP Pipeline ---
@@ -130,6 +156,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<Aristokeides.Api.Middleware.SetupRedirectMiddleware>();
+
 app.UseAntiforgery();
 
 app.UseAuthentication();

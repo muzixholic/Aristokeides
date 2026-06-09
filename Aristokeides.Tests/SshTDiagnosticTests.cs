@@ -17,6 +17,7 @@ using Xunit;
 
 namespace Aristokeides.Tests;
 
+[Collection("SshTests")]
 public class SshTDiagnosticTests
 {
     private static (string publicKey, byte[] privateKeyBytes) GenerateEcdsaKeyPair()
@@ -67,7 +68,7 @@ public class SshTDiagnosticTests
     [Fact]
     public async Task SshT_WelcomeMessage_ShouldBeReturnedAndCloseSafely()
     {
-        int testPort = 2224; // 테스트 포트 변경
+        int testPort = 2231; // 테스트 포트 변경
         var (publicKey, privateKeyBytes) = GenerateEcdsaKeyPair();
         string fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(publicKey);
 
@@ -104,6 +105,9 @@ public class SshTDiagnosticTests
         // 2. DI ServiceProvider 생성 및 AppDbContext 등록
         var services = new ServiceCollection();
         services.AddScoped(sp => new AppDbContext(dbOptions));
+        services.AddTransient<SshCommandBridge>();
+        services.AddSingleton<SshSignatureVerificationService>();
+        services.AddLogging();
         var serviceProvider = services.BuildServiceProvider();
 
         // AppDomain 미처리 예외 포획
@@ -138,7 +142,7 @@ public class SshTDiagnosticTests
         await service.StartAsync(cts.Token);
 
         // SSH 서버 구동 대기시간 확보
-        await Task.Delay(500);
+        await Task.Delay(1500);
 
         if (SshServerBackgroundService.LastException != null)
         {

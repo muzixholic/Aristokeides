@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Aristokeides.Api.Migrations
+namespace Aristokeides.Api.Migrations.Postgres
 {
     /// <inheritdoc />
     public partial class AddSshKeys : Migration

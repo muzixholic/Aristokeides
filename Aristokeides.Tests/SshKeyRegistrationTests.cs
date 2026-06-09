@@ -163,7 +163,7 @@ public class SshKeyRegistrationTests
         dynamic? err = badRequestResult.Value;
         Assert.NotNull(err);
         var message = (string)err!.GetType().GetProperty("message").GetValue(err, null);
-        Assert.Equal("Invalid key format. Only Ed25519, ECDSA, and RSA (3072 bits or higher) keys are supported.", message);
+        Assert.Equal("보안 강도가 취약합니다. RSA 키는 최소 3072비트 이상이어야 합니다. (입력됨: 2048비트)", message);
     }
 
     [Fact]
@@ -190,6 +190,6 @@ public class SshKeyRegistrationTests
         dynamic? err = badRequestResult.Value;
         Assert.NotNull(err);
         var message = (string)err!.GetType().GetProperty("message").GetValue(err, null);
-        Assert.Equal("Invalid key format. Only Ed25519, ECDSA, and RSA (3072 bits or higher) keys are supported.", message);
+        Assert.Equal("유효하지 않은 SSH 공개키 포맷입니다. (부분 분리 실패)", message);
     }
 }
