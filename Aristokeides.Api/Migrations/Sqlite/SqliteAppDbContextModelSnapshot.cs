@@ -673,6 +673,100 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.ToTable("UserSocialLogins");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Secret")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TriggerEvents")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WebhookType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.ToTable("Webhooks");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.WebhookDelivery", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DeliveredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DeliveryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("HttpStatusCode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RequestBody")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestHeaders")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResponseBody")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResponseHeaders")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("WebhookId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WebhookId");
+
+                    b.ToTable("WebhookDeliveries");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.BoardColumn", b =>
                 {
                     b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
@@ -965,6 +1059,28 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.WebhookDelivery", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Webhook", "Webhook")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("WebhookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Webhook");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.BoardColumn", b =>
                 {
                     b.Navigation("Issues");
@@ -1018,6 +1134,11 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("SocialLogins");
 
                     b.Navigation("SshKeys");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }

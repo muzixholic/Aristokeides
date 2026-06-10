@@ -29,6 +29,8 @@ public class AppDbContext : DbContext
     public DbSet<RepositoryPermission> RepositoryPermissions => Set<RepositoryPermission>();
     public DbSet<LfsLock> LfsLocks => Set<LfsLock>();
     public DbSet<LfsObject> LfsObjects => Set<LfsObject>();
+    public DbSet<Webhook> Webhooks => Set<Webhook>();
+    public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -303,6 +305,30 @@ public class AppDbContext : DbContext
             entity.HasOne(lo => lo.Repository)
                   .WithMany()
                   .HasForeignKey(lo => lo.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Webhook>(entity =>
+        {
+            entity.Property(w => w.Url).HasMaxLength(1024);
+            entity.Property(w => w.Secret).HasMaxLength(256);
+            entity.Property(w => w.ContentType).HasMaxLength(100);
+            entity.Property(w => w.WebhookType).HasMaxLength(50);
+            entity.Property(w => w.TriggerEvents).HasMaxLength(256);
+
+            entity.HasOne(w => w.Repository)
+                  .WithMany()
+                  .HasForeignKey(w => w.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WebhookDelivery>(entity =>
+        {
+            entity.Property(wd => wd.EventType).HasMaxLength(50);
+
+            entity.HasOne(wd => wd.Webhook)
+                  .WithMany(w => w.Deliveries)
+                  .HasForeignKey(wd => wd.WebhookId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -675,6 +675,100 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.ToTable("UserSocialLogins");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Secret")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("TriggerEvents")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("varchar(1024)");
+
+                    b.Property<string>("WebhookType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.ToTable("Webhooks");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.WebhookDelivery", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DeliveredAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("DeliveryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("RequestBody")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RequestHeaders")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ResponseBody")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ResponseHeaders")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("WebhookId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WebhookId");
+
+                    b.ToTable("WebhookDeliveries");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.BoardColumn", b =>
                 {
                     b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
@@ -967,6 +1061,28 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.WebhookDelivery", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Webhook", "Webhook")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("WebhookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Webhook");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.BoardColumn", b =>
                 {
                     b.Navigation("Issues");
@@ -1020,6 +1136,11 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.Navigation("SocialLogins");
 
                     b.Navigation("SshKeys");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.Webhook", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }
