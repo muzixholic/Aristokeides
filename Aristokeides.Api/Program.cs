@@ -108,6 +108,7 @@ builder.Services.AddScoped<TwoFactorService>();
 builder.Services.AddScoped<LfsService>();
 builder.Services.AddSingleton<Aristokeides.Api.Services.Webhook.WebhookQueue>();
 builder.Services.AddHostedService<Aristokeides.Api.Services.Webhook.WebhookBackgroundWorker>();
+builder.Services.AddScoped<Aristokeides.Api.Services.Webhook.WebhookService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
