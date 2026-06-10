@@ -21,9 +21,9 @@
 - [x] 조직 저장소에 대한 팀/개별 사용자 권한 설정 및 접근 제어(Read/Write/Admin) 적용
 
 ### Phase 20: Git LFS (Large File Storage) 지원
-- [ ] Git LFS API 규격(LFS Batch API, Locks API) 엔드포인트 구현
-- [ ] LFS 포인터 처리 및 대용량 바이너리 파일을 보관하는 로컬 스토리지 백엔드 연동
-- [ ] LFS 파일 업로드/다운로드 인증 구현 및 웹 UI에서 LFS 파일 감지/다운로드 처리
+- [x] Git LFS API 규격(LFS Batch API, Locks API) 엔드포인트 구현
+- [x] LFS 포인터 처리 및 대용량 바이너리 파일을 보관하는 로컬 스토리지 백엔드 연동
+- [x] LFS 파일 업로드/다운로드 인증 구현 및 웹 UI에서 LFS 파일 감지/다운로드 처리
 
 ### Phase 21: 웹훅 및 외부 연동
 - [ ] 저장소 이벤트 발생 시 웹훅 페이로드 전송 및 개별 저장소 웹훅 관리 기능 구현
