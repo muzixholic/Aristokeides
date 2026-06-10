@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Aristokeides.Api.Data;
 using Aristokeides.Api.Models;
+using Aristokeides.Api.Services;
 
 namespace Aristokeides.Api.Controllers;
 
@@ -16,10 +17,12 @@ namespace Aristokeides.Api.Controllers;
 public class LfsApiController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly LfsService _lfs;
 
-    public LfsApiController(AppDbContext db)
+    public LfsApiController(AppDbContext db, LfsService lfs)
     {
         _db = db;
+        _lfs = lfs;
     }
 
     // --- Helpers ---
@@ -108,7 +111,9 @@ public class LfsApiController : ControllerBase
         if (access == null)
             return Forbid();
 
-        // [Skeleton Response] (Actions will be integrated in Wave 2)
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var isUpload = request.Operation?.ToLowerInvariant() == "upload";
+
         var response = new LfsBatchResponse
         {
             Transfer = "basic",
@@ -117,11 +122,70 @@ public class LfsApiController : ControllerBase
 
         foreach (var obj in request.Objects)
         {
-            response.Objects.Add(new LfsObjectResponse
+            var exists = _lfs.Exists(obj.Oid, obj.Size);
+            var objResponse = new LfsObjectResponse
             {
                 Oid = obj.Oid,
                 Size = obj.Size
-            });
+            };
+
+            if (isUpload)
+            {
+                if (exists)
+                {
+                    // 파일이 이미 있으면 Actions 생략
+                    objResponse.Actions = null;
+                }
+                else
+                {
+                    // 업로드 및 검증 토큰 발급
+                    var uploadToken = _lfs.GenerateToken(validatedRepo.Id, obj.Oid, "upload");
+                    var verifyToken = _lfs.GenerateToken(validatedRepo.Id, obj.Oid, "verify");
+
+                    objResponse.Actions = new LfsActions
+                    {
+                        Upload = new LfsActionInfo
+                        {
+                            Href = $"{baseUrl}/api/lfs/{owner}/{repo}/upload/{obj.Oid}",
+                            Header = new Dictionary<string, string> { { "Authorization", $"Bearer {uploadToken}" } },
+                            ExpiresIn = 3600
+                        },
+                        Verify = new LfsActionInfo
+                        {
+                            Href = $"{baseUrl}/api/lfs/{owner}/{repo}/verify/{obj.Oid}",
+                            Header = new Dictionary<string, string> { { "Authorization", $"Bearer {verifyToken}" } },
+                            ExpiresIn = 3600
+                        }
+                    };
+                }
+            }
+            else // Download
+            {
+                if (exists)
+                {
+                    var downloadToken = _lfs.GenerateToken(validatedRepo.Id, obj.Oid, "download");
+                    objResponse.Authenticated = true;
+                    objResponse.Actions = new LfsActions
+                    {
+                        Download = new LfsActionInfo
+                        {
+                            Href = $"{baseUrl}/api/lfs/{owner}/{repo}/download/{obj.Oid}",
+                            Header = new Dictionary<string, string> { { "Authorization", $"Bearer {downloadToken}" } },
+                            ExpiresIn = 3600
+                        }
+                    };
+                }
+                else
+                {
+                    objResponse.Error = new LfsObjectError
+                    {
+                        Code = 404,
+                        Message = "Object not found"
+                    };
+                }
+            }
+
+            response.Objects.Add(objResponse);
         }
 
         Response.ContentType = "application/vnd.git-lfs+json";
@@ -250,6 +314,13 @@ public class LfsObjectResponse
     public long Size { get; set; }
     public bool? Authenticated { get; set; }
     public LfsActions? Actions { get; set; }
+    public LfsObjectError? Error { get; set; }
+}
+
+public class LfsObjectError
+{
+    public int Code { get; set; }
+    public string Message { get; set; } = "";
 }
 
 public class LfsActions

@@ -105,6 +105,7 @@ builder.Services.AddScoped<PullRequestService>();
 builder.Services.AddScoped<SetupService>();
 builder.Services.AddScoped<AdminSettingsService>();
 builder.Services.AddScoped<TwoFactorService>();
+builder.Services.AddScoped<LfsService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
