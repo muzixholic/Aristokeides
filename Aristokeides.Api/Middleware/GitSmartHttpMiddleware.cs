@@ -37,6 +37,15 @@ public class GitSmartHttpMiddleware
             return;
         }
 
+        // LFS API 요청 우회 (/{username}/{repo.name}.git/info/lfs/...)
+        if (segments.Length >= 4 && 
+            segments[2].Equals("info", StringComparison.OrdinalIgnoreCase) && 
+            segments[3].Equals("lfs", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         var ownerOrOrgName = segments[0];
         var repoNameWithGit = segments[1];
         var repoName = repoNameWithGit.Substring(0, repoNameWithGit.Length - 4);

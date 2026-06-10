@@ -161,6 +161,64 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.ToTable("IssueComments");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsLock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LockedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RepositoryId", "Path")
+                        .IsUnique();
+
+                    b.ToTable("LfsLocks");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsObject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Oid")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId", "Oid")
+                        .IsUnique();
+
+                    b.ToTable("LfsObjects");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.Organization", b =>
                 {
                     b.Property<int>("Id")
@@ -695,6 +753,36 @@ namespace Aristokeides.Api.Migrations.Sqlite
                     b.Navigation("Author");
 
                     b.Navigation("Issue");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsLock", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsObject", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.OrganizationMember", b =>

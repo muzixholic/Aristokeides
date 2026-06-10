@@ -163,6 +163,64 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.ToTable("IssueComments");
                 });
 
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsLock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LockedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RepositoryId", "Path")
+                        .IsUnique();
+
+                    b.ToTable("LfsLocks");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsObject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Oid")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId", "Oid")
+                        .IsUnique();
+
+                    b.ToTable("LfsObjects");
+                });
+
             modelBuilder.Entity("Aristokeides.Api.Models.Organization", b =>
                 {
                     b.Property<int>("Id")
@@ -697,6 +755,36 @@ namespace Aristokeides.Api.Migrations.Mysql
                     b.Navigation("Author");
 
                     b.Navigation("Issue");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsLock", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Aristokeides.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Aristokeides.Api.Models.LfsObject", b =>
+                {
+                    b.HasOne("Aristokeides.Api.Models.Repository", "Repository")
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
                 });
 
             modelBuilder.Entity("Aristokeides.Api.Models.OrganizationMember", b =>

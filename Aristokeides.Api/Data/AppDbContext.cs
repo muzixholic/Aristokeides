@@ -27,6 +27,8 @@ public class AppDbContext : DbContext
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<RepositoryPermission> RepositoryPermissions => Set<RepositoryPermission>();
+    public DbSet<LfsLock> LfsLocks => Set<LfsLock>();
+    public DbSet<LfsObject> LfsObjects => Set<LfsObject>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -274,6 +276,33 @@ public class AppDbContext : DbContext
             entity.HasOne(rp => rp.Team)
                   .WithMany(t => t.Permissions)
                   .HasForeignKey(rp => rp.TeamId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<LfsLock>(entity =>
+        {
+            entity.HasIndex(l => new { l.RepositoryId, l.Path }).IsUnique();
+            entity.Property(l => l.Path).HasMaxLength(512);
+
+            entity.HasOne(l => l.Repository)
+                  .WithMany()
+                  .HasForeignKey(l => l.RepositoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(l => l.User)
+                  .WithMany()
+                  .HasForeignKey(l => l.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<LfsObject>(entity =>
+        {
+            entity.HasIndex(lo => new { lo.RepositoryId, lo.Oid }).IsUnique();
+            entity.Property(lo => lo.Oid).HasMaxLength(64);
+
+            entity.HasOne(lo => lo.Repository)
+                  .WithMany()
+                  .HasForeignKey(lo => lo.RepositoryId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }
