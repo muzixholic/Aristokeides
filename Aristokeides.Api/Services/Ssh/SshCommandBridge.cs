@@ -9,6 +9,8 @@ using FxSsh.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Aristokeides.Api.Services.Webhook;
+
 
 namespace Aristokeides.Api.Services.Ssh;
 
@@ -174,6 +176,79 @@ public class SshCommandBridge
                                             var prService = scope.ServiceProvider.GetRequiredService<PullRequestService>();
                                             var branchName = r.CanonicalName.Substring("refs/heads/".Length);
                                             await prService.OnBranchPushedAsync(repository.Id, branchName, oldOid, newOid);
+
+                                            // 웹훅 push 이벤트 트리거
+                                            try
+                                            {
+                                                var webhookService = scope.ServiceProvider.GetRequiredService<WebhookService>();
+                                                var commitsList = new List<object>();
+                                                try
+                                                {
+                                                    if (oldOid != "0000000000000000000000000000000000000000")
+                                                    {
+                                                        var filter = new LibGit2Sharp.CommitFilter
+                                                        {
+                                                            IncludeReachableFrom = newOid,
+                                                            ExcludeReachableFrom = oldOid
+                                                        };
+                                                        foreach (var c in repo.Commits.QueryBy(filter))
+                                                        {
+                                                            commitsList.Add(new
+                                                            {
+                                                                id = c.Sha,
+                                                                message = c.MessageShort,
+                                                                author = c.Author.Name
+                                                            });
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        var commit = repo.Lookup(newOid) as LibGit2Sharp.Commit;
+                                                        if (commit != null)
+                                                        {
+                                                            commitsList.Add(new
+                                                            {
+                                                                id = commit.Sha,
+                                                                message = commit.MessageShort,
+                                                                author = commit.Author.Name
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                                catch (Exception commitEx)
+                                                {
+                                                    _logger.LogWarning(commitEx, "Failed to build commit list for SSH webhook payload.");
+                                                }
+
+                                                var pushPayload = new
+                                                {
+                                                    @event = "push",
+                                                    repository = new
+                                                    {
+                                                        id = repository.Id,
+                                                        name = repository.Name,
+                                                        owner = repository.Owner?.Username ?? "unknown"
+                                                    },
+                                                    sender = new
+                                                    {
+                                                        id = state.UserId,
+                                                        username = state.Username
+                                                    },
+                                                    data = new
+                                                    {
+                                                        @ref = r.CanonicalName,
+                                                        before = oldOid,
+                                                        after = newOid,
+                                                        commits = commitsList
+                                                    }
+                                                };
+
+                                                await webhookService.TriggerWebhookAsync(repository.Id, "push", pushPayload);
+                                            }
+                                            catch (Exception webEx)
+                                            {
+                                                _logger.LogError(webEx, "Failed to trigger SSH push webhook.");
+                                            }
                                         }
                                     }
                                 }

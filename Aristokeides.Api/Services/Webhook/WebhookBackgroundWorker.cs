@@ -87,19 +87,15 @@ public class WebhookBackgroundWorker : BackgroundService
             request.Headers.Add("X-Aristokeides-Signature-256", signature);
         }
 
-        // 템플릿 변환 어댑터 (Slack/Discord 대응은 21C에서 고도화하지만 뼈대 연동)
+        // 템플릿 변환 어댑터 (Slack/Discord 지원)
         var finalPayload = task.Payload;
         if (task.WebhookType.Equals("Slack", StringComparison.OrdinalIgnoreCase))
         {
-            // Slack 포맷 가공 뼈대
-            var slackPayload = new { text = task.Payload };
-            finalPayload = JsonSerializer.Serialize(slackPayload);
+            finalPayload = WebhookService.TransformToSlack(task.EventType, task.Payload);
         }
         else if (task.WebhookType.Equals("Discord", StringComparison.OrdinalIgnoreCase))
         {
-            // Discord 포맷 가공 뼈대
-            var discordPayload = new { content = task.Payload };
-            finalPayload = JsonSerializer.Serialize(discordPayload);
+            finalPayload = WebhookService.TransformToDiscord(task.EventType, task.Payload);
         }
 
         request.Content = new StringContent(finalPayload, Encoding.UTF8, task.ContentType);

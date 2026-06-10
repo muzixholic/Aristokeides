@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-check-update.js\""
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-check-update.js\""
           }
         ]
       },
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-update-banner.js\""
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-update-banner.js\""
           }
         ]
       }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-context-monitor.js\"",
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-context-monitor.js\"",
             "timeout": 10
           }
         ]
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-read-injection-scanner.js\"",
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-read-injection-scanner.js\"",
             "timeout": 5
           }
         ]
@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-prompt-guard.js\"",
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-prompt-guard.js\"",
             "timeout": 5
           }
         ]
@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-read-guard.js\"",
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-read-guard.js\"",
             "timeout": 5
           }
         ]
@@ -94,7 +94,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/1936_1780970185636/node.exe\" \".agent/hooks/gsd-workflow-guard.js\"",
+            "command": "\"C:/Users/Choi Hyunmin/AppData/Local/fnm_multishells/34500_1781054694843/node.exe\" \".agent/hooks/gsd-workflow-guard.js\"",
             "timeout": 5
           }
         ]

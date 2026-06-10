@@ -5,16 +5,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Aristokeides.Api.Services.Webhook;
+
 
 namespace Aristokeides.Api.Services;
 
 public class IssueService
 {
     private readonly AppDbContext _context;
+    private readonly WebhookService _webhookService;
 
-    public IssueService(AppDbContext context)
+    public IssueService(AppDbContext context, WebhookService webhookService)
     {
         _context = context;
+        _webhookService = webhookService;
     }
 
     public async Task<List<Issue>> GetIssuesAsync(Guid repositoryId)
@@ -81,6 +85,41 @@ public class IssueService
         await _context.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        // Webhook trigger
+        try
+        {
+            var repo = await _context.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == repositoryId);
+            var senderUser = await _context.Users.FindAsync(creatorId);
+            var payload = new
+            {
+                @event = "issue",
+                repository = new
+                {
+                    id = repositoryId,
+                    name = repo?.Name ?? "unknown",
+                    owner = repo?.Owner?.Username ?? repo?.Organization?.Name ?? "unknown"
+                },
+                sender = new
+                {
+                    id = creatorId,
+                    username = senderUser?.Username ?? "unknown"
+                },
+                data = new
+                {
+                    action = "opened",
+                    issue = new
+                    {
+                        number = issue.LocalId,
+                        title = issue.Title,
+                        body = issue.Description,
+                        html_url = $"/repositories/{repositoryId}/issues/{issue.LocalId}"
+                    }
+                }
+            };
+            await _webhookService.TriggerWebhookAsync(repositoryId, "issue", payload);
+        }
+        catch { }
+
         return issue;
     }
 
@@ -106,7 +145,7 @@ public class IssueService
         await _context.SaveChangesAsync();
     }
 
-    public async Task CloseIssueAsync(Guid issueId)
+    public async Task CloseIssueAsync(Guid issueId, int? actorId = null)
     {
         var issue = await _context.Issues.Include(i => i.Repository).ThenInclude(r => r!.BoardColumns).FirstOrDefaultAsync(i => i.Id == issueId);
         if (issue == null) throw new KeyNotFoundException("Issue not found.");
@@ -121,6 +160,42 @@ public class IssueService
             issue.ColumnId = doneColumn.Id;
             issue.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Webhook trigger
+            try
+            {
+                int senderId = actorId ?? issue.CreatorId;
+                var repo = await _context.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == issue.RepositoryId);
+                var senderUser = await _context.Users.FindAsync(senderId);
+                var payload = new
+                {
+                    @event = "issue",
+                    repository = new
+                    {
+                        id = issue.RepositoryId,
+                        name = repo?.Name ?? "unknown",
+                        owner = repo?.Owner?.Username ?? repo?.Organization?.Name ?? "unknown"
+                    },
+                    sender = new
+                    {
+                        id = senderId,
+                        username = senderUser?.Username ?? "unknown"
+                    },
+                    data = new
+                    {
+                        action = "closed",
+                        issue = new
+                        {
+                            number = issue.LocalId,
+                            title = issue.Title,
+                            body = issue.Description,
+                            html_url = $"/repositories/{issue.RepositoryId}/issues/{issue.LocalId}"
+                        }
+                    }
+                };
+                await _webhookService.TriggerWebhookAsync(issue.RepositoryId, "issue", payload);
+            }
+            catch { }
         }
     }
 
@@ -137,6 +212,49 @@ public class IssueService
 
         _context.IssueComments.Add(comment);
         await _context.SaveChangesAsync();
+
+        // Webhook trigger
+        try
+        {
+            var issue = await _context.Issues.FindAsync(issueId);
+            if (issue != null)
+            {
+                var repo = await _context.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == issue.RepositoryId);
+                var senderUser = await _context.Users.FindAsync(authorId);
+                var payload = new
+                {
+                    @event = "issue",
+                    repository = new
+                    {
+                        id = issue.RepositoryId,
+                        name = repo?.Name ?? "unknown",
+                        owner = repo?.Owner?.Username ?? repo?.Organization?.Name ?? "unknown"
+                    },
+                    sender = new
+                    {
+                        id = authorId,
+                        username = senderUser?.Username ?? "unknown"
+                    },
+                    data = new
+                    {
+                        action = "commented",
+                        issue = new
+                        {
+                            number = issue.LocalId,
+                            title = issue.Title,
+                            body = issue.Description,
+                            html_url = $"/repositories/{issue.RepositoryId}/issues/{issue.LocalId}"
+                        },
+                        comment = new
+                        {
+                            body = comment.Content
+                        }
+                    }
+                };
+                await _webhookService.TriggerWebhookAsync(issue.RepositoryId, "issue", payload);
+            }
+        }
+        catch { }
 
         return comment;
     }

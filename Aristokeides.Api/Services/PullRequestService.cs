@@ -4,6 +4,8 @@ using LibGit2Sharp;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;
+using Aristokeides.Api.Services.Webhook;
+
 
 namespace Aristokeides.Api.Services;
 
@@ -13,13 +15,15 @@ public class PullRequestService
     private readonly IssueService _issueService;
     private readonly GitBrowserService _gitService;
     private readonly IConfiguration _config;
+    private readonly WebhookService _webhookService;
 
-    public PullRequestService(AppDbContext db, IssueService issueService, GitBrowserService gitService, IConfiguration config)
+    public PullRequestService(AppDbContext db, IssueService issueService, GitBrowserService gitService, IConfiguration config, WebhookService webhookService)
     {
         _db = db;
         _issueService = issueService;
         _gitService = gitService;
         _config = config;
+        _webhookService = webhookService;
     }
 
     private async Task<string?> GetRepoPath(Guid repositoryId)
@@ -71,6 +75,41 @@ public class PullRequestService
 
         _db.PullRequests.Add(pr);
         await _db.SaveChangesAsync();
+
+        // Webhook trigger
+        try
+        {
+            var dbRepo = await _db.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == repositoryId);
+            var senderUser = await _db.Users.FindAsync(creatorId);
+            var payload = new
+            {
+                @event = "pull_request",
+                repository = new
+                {
+                    id = repositoryId,
+                    name = dbRepo?.Name ?? "unknown",
+                    owner = dbRepo?.Owner?.Username ?? dbRepo?.Organization?.Name ?? "unknown"
+                },
+                sender = new
+                {
+                    id = creatorId,
+                    username = senderUser?.Username ?? "unknown"
+                },
+                data = new
+                {
+                    action = "opened",
+                    pull_request = new
+                    {
+                        number = issue.LocalId,
+                        title = issue.Title,
+                        body = issue.Description,
+                        html_url = $"/repositories/{repositoryId}/pulls/{issue.LocalId}"
+                    }
+                }
+            };
+            await _webhookService.TriggerWebhookAsync(repositoryId, "pull_request", payload);
+        }
+        catch { }
 
         return pr;
     }
@@ -161,7 +200,46 @@ public class PullRequestService
         pullRequest.MergeCommitSha = mergeCommit.Sha;
         await _db.SaveChangesAsync();
 
-        await _issueService.CloseIssueAsync(pullRequest.IssueId);
+        await _issueService.CloseIssueAsync(pullRequest.IssueId, userId);
+
+        // Webhook trigger
+        try
+        {
+            var issue = await _db.Issues.FindAsync(pullRequest.IssueId);
+            if (issue != null)
+            {
+                var dbRepo = await _db.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == repositoryId);
+                var senderUser = await _db.Users.FindAsync(userId);
+                var payload = new
+                {
+                    @event = "pull_request",
+                    repository = new
+                    {
+                        id = repositoryId,
+                        name = dbRepo?.Name ?? "unknown",
+                        owner = dbRepo?.Owner?.Username ?? dbRepo?.Organization?.Name ?? "unknown"
+                    },
+                    sender = new
+                    {
+                        id = userId,
+                        username = senderUser?.Username ?? "unknown"
+                    },
+                    data = new
+                    {
+                        action = "merged",
+                        pull_request = new
+                        {
+                            number = issue.LocalId,
+                            title = issue.Title,
+                            body = issue.Description,
+                            html_url = $"/repositories/{repositoryId}/pulls/{issue.LocalId}"
+                        }
+                    }
+                };
+                await _webhookService.TriggerWebhookAsync(repositoryId, "pull_request", payload);
+            }
+        }
+        catch { }
     }
 
     public async Task<List<PullRequestReviewComment>> GetReviewCommentsAsync(Guid pullRequestId)
@@ -251,6 +329,49 @@ public class PullRequestService
 
         _db.PullRequestReviewComments.Add(comment);
         await _db.SaveChangesAsync();
+
+        if (!isPending)
+        {
+            // Webhook trigger
+            try
+            {
+                var repoId = pr.Issue.RepositoryId;
+                var dbRepo = await _db.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == repoId);
+                var senderUser = await _db.Users.FindAsync(authorId);
+                var payload = new
+                {
+                    @event = "pull_request",
+                    repository = new
+                    {
+                        id = repoId,
+                        name = dbRepo?.Name ?? "unknown",
+                        owner = dbRepo?.Owner?.Username ?? dbRepo?.Organization?.Name ?? "unknown"
+                    },
+                    sender = new
+                    {
+                        id = authorId,
+                        username = senderUser?.Username ?? "unknown"
+                    },
+                    data = new
+                    {
+                        action = "review_commented",
+                        pull_request = new
+                        {
+                            number = pr.Issue.LocalId,
+                            title = pr.Issue.Title,
+                            body = pr.Issue.Description,
+                            html_url = $"/repositories/{repoId}/pulls/{pr.Issue.LocalId}"
+                        },
+                        comment = new
+                        {
+                            body = comment.Content
+                        }
+                    }
+                };
+                await _webhookService.TriggerWebhookAsync(repoId, "pull_request", payload);
+            }
+            catch { }
+        }
 
         return await _db.PullRequestReviewComments
             .Include(c => c.Author)
@@ -348,6 +469,52 @@ public class PullRequestService
 
         _db.PullRequestReviews.Add(review);
         await _db.SaveChangesAsync();
+
+        // Webhook trigger
+        try
+        {
+            var pr = await _db.PullRequests
+                .Include(p => p.Issue)
+                .FirstOrDefaultAsync(p => p.IssueId == pullRequestId);
+            if (pr != null && pr.Issue != null)
+            {
+                var repoId = pr.Issue.RepositoryId;
+                var dbRepo = await _db.Repositories.Include(r => r.Owner).Include(r => r.Organization).FirstOrDefaultAsync(r => r.Id == repoId);
+                var senderUser = await _db.Users.FindAsync(authorId);
+                var payload = new
+                {
+                    @event = "pull_request",
+                    repository = new
+                    {
+                        id = repoId,
+                        name = dbRepo?.Name ?? "unknown",
+                        owner = dbRepo?.Owner?.Username ?? dbRepo?.Organization?.Name ?? "unknown"
+                    },
+                    sender = new
+                    {
+                        id = authorId,
+                        username = senderUser?.Username ?? "unknown"
+                    },
+                    data = new
+                    {
+                        action = "commented",
+                        pull_request = new
+                        {
+                            number = pr.Issue.LocalId,
+                            title = pr.Issue.Title,
+                            body = pr.Issue.Description,
+                            html_url = $"/repositories/{repoId}/pulls/{pr.Issue.LocalId}"
+                        },
+                        comment = new
+                        {
+                            body = $"{state}: {body}"
+                        }
+                    }
+                };
+                await _webhookService.TriggerWebhookAsync(repoId, "pull_request", payload);
+            }
+        }
+        catch { }
 
         return review;
     }

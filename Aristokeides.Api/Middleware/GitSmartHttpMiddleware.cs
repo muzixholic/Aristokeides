@@ -6,6 +6,8 @@ using Aristokeides.Api.Services.Ssh;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Aristokeides.Api.Services.Webhook;
+
 
 namespace Aristokeides.Api.Middleware;
 
@@ -250,6 +252,82 @@ public class GitSmartHttpMiddleware
                                 var prService = scope.ServiceProvider.GetRequiredService<PullRequestService>();
                                 var branchName = r.CanonicalName.Substring("refs/heads/".Length);
                                 await prService.OnBranchPushedAsync(repo.Id, branchName, oldOid, newOid);
+
+                                // 웹훅 push 이벤트 트리거
+                                try
+                                {
+                                    var webhookService = scope.ServiceProvider.GetRequiredService<WebhookService>();
+                                    var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                                    var senderUser = await scopedDb.Users.FindAsync(userId);
+
+                                    var commitsList = new List<object>();
+                                    try
+                                    {
+                                        if (oldOid != "0000000000000000000000000000000000000000")
+                                        {
+                                            var filter = new LibGit2Sharp.CommitFilter
+                                            {
+                                                IncludeReachableFrom = newOid,
+                                                ExcludeReachableFrom = oldOid
+                                            };
+                                            foreach (var c in gitRepo.Commits.QueryBy(filter))
+                                            {
+                                                commitsList.Add(new
+                                                {
+                                                    id = c.Sha,
+                                                    message = c.MessageShort,
+                                                    author = c.Author.Name
+                                                });
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var commit = gitRepo.Lookup(newOid) as LibGit2Sharp.Commit;
+                                            if (commit != null)
+                                            {
+                                                commitsList.Add(new
+                                                {
+                                                    id = commit.Sha,
+                                                    message = commit.MessageShort,
+                                                    author = commit.Author.Name
+                                                });
+                                            }
+                                        }
+                                    }
+                                    catch (Exception commitEx)
+                                    {
+                                        _logger.LogWarning(commitEx, "Failed to build commit list for webhook payload.");
+                                    }
+
+                                    var pushPayload = new
+                                    {
+                                        @event = "push",
+                                        repository = new
+                                        {
+                                            id = repo.Id,
+                                            name = repo.Name,
+                                            owner = repo.Owner?.Username ?? repo.Organization?.Name ?? "unknown"
+                                        },
+                                        sender = new
+                                        {
+                                            id = senderUser?.Id ?? userId,
+                                            username = senderUser?.Username ?? "unknown-user"
+                                        },
+                                        data = new
+                                        {
+                                            @ref = r.CanonicalName,
+                                            before = oldOid,
+                                            after = newOid,
+                                            commits = commitsList
+                                        }
+                                    };
+
+                                    await webhookService.TriggerWebhookAsync(repo.Id, "push", pushPayload);
+                                }
+                                catch (Exception webEx)
+                                {
+                                    _logger.LogError(webEx, "Failed to trigger push webhook.");
+                                }
                             }
                         }
                     }

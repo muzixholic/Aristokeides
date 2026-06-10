@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Aristokeides.Api.Data;
 using Aristokeides.Api.Models;
+using System.Text.Json;
+
 
 namespace Aristokeides.Api.Services.Webhook;
 
@@ -188,4 +190,261 @@ public class WebhookService
         await _queue.QueueWebhookTaskAsync(task);
         return true;
     }
+
+    // Slack Incoming Webhook 규격으로 페이로드 변환
+    public static string TransformToSlack(string eventType, string payloadJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+            
+            var repoName = root.TryGetProperty("repository", out var repoProp) && repoProp.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : "unknown-repo";
+            var senderName = root.TryGetProperty("sender", out var senderProp) && senderProp.TryGetProperty("username", out var userProp) ? userProp.GetString() : "unknown-user";
+            
+            string text = "";
+            
+            if (eventType.Equals("push", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var refStr = dataProp.TryGetProperty("ref", out var refProp) ? refProp.GetString() : "";
+                    var branch = !string.IsNullOrEmpty(refStr) ? refStr.Replace("refs/heads/", "") : "unknown-branch";
+                    
+                    var commitsList = new List<string>();
+                    if (dataProp.TryGetProperty("commits", out var commitsProp) && commitsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var commit in commitsProp.EnumerateArray())
+                        {
+                            var sha = commit.TryGetProperty("id", out var shaProp) ? shaProp.GetString() : "";
+                            var shortSha = sha != null && sha.Length > 7 ? sha.Substring(0, 7) : sha;
+                            var msg = commit.TryGetProperty("message", out var msgProp) ? msgProp.GetString() : "";
+                            var author = commit.TryGetProperty("author", out var authProp) ? authProp.GetString() : "";
+                            commitsList.Add($"- `{shortSha}` {msg} (by {author})");
+                        }
+                    }
+                    
+                    var commitDetails = string.Join("\n", commitsList);
+                    text = $"🚀 *[{repoName}:{branch}]* {commitsList.Count} new commits pushed by *{senderName}*:\n{commitDetails}";
+                }
+                else
+                {
+                    text = $"🚀 *[{repoName}]* Push event triggered by *{senderName}*.";
+                }
+            }
+            else if (eventType.Equals("issue", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var action = dataProp.TryGetProperty("action", out var actionProp) ? actionProp.GetString() : "updated";
+                    
+                    if (dataProp.TryGetProperty("issue", out var issueObj) && issueObj.ValueKind != JsonValueKind.Undefined)
+                    {
+                        var number = issueObj.TryGetProperty("number", out var numProp) ? numProp.GetInt32() : 0;
+                        var title = issueObj.TryGetProperty("title", out var titleProp) ? titleProp.GetString() : "";
+                        var body = issueObj.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() : "";
+                        var htmlUrl = issueObj.TryGetProperty("html_url", out var urlProp) ? urlProp.GetString() : "";
+                        
+                        var bodyPreview = !string.IsNullOrEmpty(body) ? (body.Length > 100 ? body.Substring(0, 100) + "..." : body) : "";
+                        
+                        var actionEmoji = action == "opened" ? "✏️" : (action == "closed" ? "✅" : "💬");
+                        var link = string.IsNullOrEmpty(htmlUrl) ? $"#{number}" : $"<{htmlUrl}|#{number}>";
+                        
+                        if (action == "commented")
+                        {
+                            var commentBody = dataProp.TryGetProperty("comment", out var commentObj) && commentObj.TryGetProperty("body", out var cBodyProp) ? cBodyProp.GetString() : "";
+                            var commentPreview = !string.IsNullOrEmpty(commentBody) ? (commentBody.Length > 100 ? commentBody.Substring(0, 100) + "..." : commentBody) : "";
+                            
+                            text = $"{actionEmoji} *[{repoName}]* Comment added on Issue {link} by *{senderName}*\n> *Comment:* {commentPreview}";
+                        }
+                        else
+                        {
+                            text = $"{actionEmoji} *[{repoName}]* Issue {link} *{action}* by *{senderName}*\n> *Title:* {title}\n> {bodyPreview}";
+                        }
+                    }
+                    else
+                    {
+                        text = $"✏️ *[{repoName}]* Issue event ({action}) triggered by *{senderName}*.";
+                    }
+                }
+            }
+            else if (eventType.Equals("pull_request", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var action = dataProp.TryGetProperty("action", out var actionProp) ? actionProp.GetString() : "updated";
+                    
+                    if (dataProp.TryGetProperty("pull_request", out var prObj) && prObj.ValueKind != JsonValueKind.Undefined)
+                    {
+                        var number = prObj.TryGetProperty("number", out var numProp) ? numProp.GetInt32() : 0;
+                        var title = prObj.TryGetProperty("title", out var titleProp) ? titleProp.GetString() : "";
+                        var body = prObj.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() : "";
+                        var htmlUrl = prObj.TryGetProperty("html_url", out var urlProp) ? urlProp.GetString() : "";
+                        
+                        var bodyPreview = !string.IsNullOrEmpty(body) ? (body.Length > 100 ? body.Substring(0, 100) + "..." : body) : "";
+                        
+                        var actionEmoji = action == "opened" ? "🔀" : (action == "merged" ? "💜" : (action == "closed" ? "❌" : "💬"));
+                        var link = string.IsNullOrEmpty(htmlUrl) ? $"#{number}" : $"<{htmlUrl}|#{number}>";
+                        
+                        if (action == "commented" || action == "review_commented")
+                        {
+                            var commentBody = dataProp.TryGetProperty("comment", out var commentObj) && commentObj.TryGetProperty("body", out var cBodyProp) ? cBodyProp.GetString() : "";
+                            var commentPreview = !string.IsNullOrEmpty(commentBody) ? (commentBody.Length > 100 ? commentBody.Substring(0, 100) + "..." : commentBody) : "";
+                            
+                            text = $"{actionEmoji} *[{repoName}]* Review comment added on PR {link} by *{senderName}*\n> *Comment:* {commentPreview}";
+                        }
+                        else
+                        {
+                            text = $"{actionEmoji} *[{repoName}]* Pull Request {link} *{action}* by *{senderName}*\n> *Title:* {title}\n> {bodyPreview}";
+                        }
+                    }
+                    else
+                    {
+                        text = $"🔀 *[{repoName}]* Pull Request event ({action}) triggered by *{senderName}*.";
+                    }
+                }
+            }
+            else
+            {
+                text = $"🔔 *[{repoName}]* Event `{eventType}` triggered by *{senderName}*.\n```json\n{payloadJson}\n```";
+            }
+            
+            var slackPayload = new { text = text };
+            return JsonSerializer.Serialize(slackPayload);
+        }
+        catch (Exception ex)
+        {
+            var fallbackPayload = new { text = $"⚠️ Error generating Slack webhook payload for event `{eventType}`: {ex.Message}" };
+            return JsonSerializer.Serialize(fallbackPayload);
+        }
+    }
+
+    // Discord Incoming Webhook 규격으로 페이로드 변환
+    public static string TransformToDiscord(string eventType, string payloadJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+            
+            var repoName = root.TryGetProperty("repository", out var repoProp) && repoProp.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : "unknown-repo";
+            var senderName = root.TryGetProperty("sender", out var senderProp) && senderProp.TryGetProperty("username", out var userProp) ? userProp.GetString() : "unknown-user";
+            
+            string content = "";
+            
+            if (eventType.Equals("push", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var refStr = dataProp.TryGetProperty("ref", out var refProp) ? refProp.GetString() : "";
+                    var branch = !string.IsNullOrEmpty(refStr) ? refStr.Replace("refs/heads/", "") : "unknown-branch";
+                    
+                    var commitsList = new List<string>();
+                    if (dataProp.TryGetProperty("commits", out var commitsProp) && commitsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var commit in commitsProp.EnumerateArray())
+                        {
+                            var sha = commit.TryGetProperty("id", out var shaProp) ? shaProp.GetString() : "";
+                            var shortSha = sha != null && sha.Length > 7 ? sha.Substring(0, 7) : sha;
+                            var msg = commit.TryGetProperty("message", out var msgProp) ? msgProp.GetString() : "";
+                            var author = commit.TryGetProperty("author", out var authProp) ? authProp.GetString() : "";
+                            commitsList.Add($"- `{shortSha}` {msg} (by {author})");
+                        }
+                    }
+                    
+                    var commitDetails = string.Join("\n", commitsList);
+                    content = $"🚀 **[{repoName}:{branch}]** {commitsList.Count} new commits pushed by **{senderName}**:\n{commitDetails}";
+                }
+                else
+                {
+                    content = $"🚀 **[{repoName}]** Push event triggered by **{senderName}**.";
+                }
+            }
+            else if (eventType.Equals("issue", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var action = dataProp.TryGetProperty("action", out var actionProp) ? actionProp.GetString() : "updated";
+                    
+                    if (dataProp.TryGetProperty("issue", out var issueObj) && issueObj.ValueKind != JsonValueKind.Undefined)
+                    {
+                        var number = issueObj.TryGetProperty("number", out var numProp) ? numProp.GetInt32() : 0;
+                        var title = issueObj.TryGetProperty("title", out var titleProp) ? titleProp.GetString() : "";
+                        var body = issueObj.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() : "";
+                        var htmlUrl = issueObj.TryGetProperty("html_url", out var urlProp) ? urlProp.GetString() : "";
+                        
+                        var bodyPreview = !string.IsNullOrEmpty(body) ? (body.Length > 100 ? body.Substring(0, 100) + "..." : body) : "";
+                        
+                        var actionEmoji = action == "opened" ? "✏️" : (action == "closed" ? "✅" : "💬");
+                        var link = string.IsNullOrEmpty(htmlUrl) ? $"#{number}" : $"[#{number}]({htmlUrl})";
+                        
+                        if (action == "commented")
+                        {
+                            var commentBody = dataProp.TryGetProperty("comment", out var commentObj) && commentObj.TryGetProperty("body", out var cBodyProp) ? cBodyProp.GetString() : "";
+                            var commentPreview = !string.IsNullOrEmpty(commentBody) ? (commentBody.Length > 100 ? commentBody.Substring(0, 100) + "..." : commentBody) : "";
+                            
+                            content = $"{actionEmoji} **[{repoName}]** Comment added on Issue {link} by **{senderName}**\n> **Comment:** {commentPreview}";
+                        }
+                        else
+                        {
+                            content = $"{actionEmoji} **[{repoName}]** Issue {link} **{action}** by **{senderName}**\n> **Title:** {title}\n> {bodyPreview}";
+                        }
+                    }
+                    else
+                    {
+                        content = $"✏️ **[{repoName}]** Issue event ({action}) triggered by **{senderName}**.";
+                    }
+                }
+            }
+            else if (eventType.Equals("pull_request", StringComparison.OrdinalIgnoreCase))
+            {
+                if (root.TryGetProperty("data", out var dataProp))
+                {
+                    var action = dataProp.TryGetProperty("action", out var actionProp) ? actionProp.GetString() : "updated";
+                    
+                    if (dataProp.TryGetProperty("pull_request", out var prObj) && prObj.ValueKind != JsonValueKind.Undefined)
+                    {
+                        var number = prObj.TryGetProperty("number", out var numProp) ? numProp.GetInt32() : 0;
+                        var title = prObj.TryGetProperty("title", out var titleProp) ? titleProp.GetString() : "";
+                        var body = prObj.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() : "";
+                        var htmlUrl = prObj.TryGetProperty("html_url", out var urlProp) ? urlProp.GetString() : "";
+                        
+                        var bodyPreview = !string.IsNullOrEmpty(body) ? (body.Length > 100 ? body.Substring(0, 100) + "..." : body) : "";
+                        
+                        var actionEmoji = action == "opened" ? "🔀" : (action == "merged" ? "💜" : (action == "closed" ? "❌" : "💬"));
+                        var link = string.IsNullOrEmpty(htmlUrl) ? $"#{number}" : $"[#{number}]({htmlUrl})";
+                        
+                        if (action == "commented" || action == "review_commented")
+                        {
+                            var commentBody = dataProp.TryGetProperty("comment", out var commentObj) && commentObj.TryGetProperty("body", out var cBodyProp) ? cBodyProp.GetString() : "";
+                            var commentPreview = !string.IsNullOrEmpty(commentBody) ? (commentBody.Length > 100 ? commentBody.Substring(0, 100) + "..." : commentBody) : "";
+                            
+                            content = $"{actionEmoji} **[{repoName}]** Review comment added on PR {link} by **{senderName}**\n> **Comment:** {commentPreview}";
+                        }
+                        else
+                        {
+                            content = $"{actionEmoji} **[{repoName}]** Pull Request {link} **{action}** by **{senderName}**\n> **Title:** {title}\n> {bodyPreview}";
+                        }
+                    }
+                    else
+                    {
+                        content = $"🔀 **[{repoName}]** Pull Request event ({action}) triggered by **{senderName}**.";
+                    }
+                }
+            }
+            else
+            {
+                content = $"🔔 **[{repoName}]** Event `{eventType}` triggered by **{senderName}**.\n```json\n{payloadJson}\n```";
+            }
+            
+            var discordPayload = new { content = content };
+            return JsonSerializer.Serialize(discordPayload);
+        }
+        catch (Exception ex)
+        {
+            var fallbackPayload = new { content = $"⚠️ Error generating Discord webhook payload for event `{eventType}`: {ex.Message}" };
+            return JsonSerializer.Serialize(fallbackPayload);
+        }
+    }
 }
+
