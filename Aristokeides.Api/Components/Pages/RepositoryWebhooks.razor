@@ -1,0 +1,662 @@
+@page "/{Username}/{RepoName}/settings/webhooks"
+@using Aristokeides.Api.Data
+@using Aristokeides.Api.Models
+@using Aristokeides.Api.Services.Webhook
+@using System.Text.Json
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject AppDbContext DbContext
+@inject WebhookService WebhookService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<PageTitle>웹훅 설정 - @Username/@RepoName</PageTitle>
+
+<div class="repo-header" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">
+            <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">@Username / @RepoName</a>
+        </h1>
+        <div style="margin-top: 16px; display: flex; gap: 16px;">
+            <a href="/@Username/@RepoName" style="color: #4b5563; text-decoration: none;">Code</a>
+            <a href="/@Username/@RepoName/issues" style="color: #4b5563; text-decoration: none;">Issues</a>
+            <a href="/@Username/@RepoName/settings" style="color: var(--accent, #2563eb); text-decoration: none; font-weight: 500; border-bottom: 2px solid var(--accent, #2563eb); padding-bottom: 4px;">Settings</a>
+        </div>
+    </div>
+</div>
+
+<div style="max-width: 1100px; margin: 0 auto; display: flex; gap: 24px; flex-wrap: wrap;">
+    @if (isLoading)
+    {
+        <div style="flex: 1; padding: 48px; text-align: center; color: #6b7280;">
+            <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;"></div>
+            <div>설정을 불러오는 중...</div>
+        </div>
+    }
+    else if (repository == null)
+    {
+        <div style="flex: 1;">
+            <div style="background-color: #fee2e2; color: #ef4444; padding: 16px; border-radius: 6px; border: 1px solid #fca5a5;">
+                저장소를 찾을 수 없거나 설정 접근 권한이 없습니다. (저장소 관리 권한이 필요합니다)
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Left Navigation Sidebar -->
+        <div style="width: 240px; display: flex; flex-direction: column; gap: 8px;">
+            <a href="/@Username/@RepoName/settings" style="text-align: left; padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #4b5563; text-decoration: none; transition: all 0.15s; background: transparent;">
+                일반 설정
+            </a>
+            <a href="/@Username/@RepoName/settings" style="text-align: left; padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #4b5563; text-decoration: none; transition: all 0.15s; background: transparent;">
+                Collaborators & Permissions
+            </a>
+            <a href="/@Username/@RepoName/settings/webhooks" style="text-align: left; padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #2563eb; text-decoration: none; transition: all 0.15s; background: #eff6ff;">
+                웹훅 설정 (Webhooks)
+            </a>
+        </div>
+
+        <!-- Right Content Panel -->
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 32px;">
+            
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div style="background-color: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 6px; border: 1px solid #6ee7b7; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span>@successMessage</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="background-color: #fee2e2; color: #ef4444; padding: 12px 16px; border-radius: 6px; border: 1px solid #fca5a5; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span>@errorMessage</span>
+                </div>
+            }
+
+            <!-- Webhook List Section -->
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 18px; font-weight: 600; margin: 0;">Webhooks</h2>
+                    <button @onclick="ShowCreateForm" style="padding: 8px 16px; background: #2563eb; border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 13px; cursor: pointer;">
+                        웹훅 추가
+                    </button>
+                </div>
+
+                @if (!webhooks.Any())
+                {
+                    <p style="color: #6b7280; font-size: 14px; text-align: center; padding: 24px 0;">등록된 웹훅이 없습니다. 저장소 이벤트를 수신할 외부 엔드포인트를 추가해보세요.</p>
+                }
+                else
+                {
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+                                    <th style="padding: 12px 8px;">Target URL</th>
+                                    <th style="padding: 12px 8px;">Type</th>
+                                    <th style="padding: 12px 8px;">Content-Type</th>
+                                    <th style="padding: 12px 8px;">Status</th>
+                                    <th style="padding: 12px 8px; text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var hook in webhooks)
+                                {
+                                    <tr style="border-bottom: 1px solid #f3f4f6; @(selectedWebhook?.Id == hook.Id ? "background: #f9fafb;" : "")">
+                                        <td style="padding: 12px 8px; word-break: break-all;">@hook.Url</td>
+                                        <td style="padding: 12px 8px;">
+                                            <span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: @(hook.WebhookType == "Generic" ? "#e0f2fe" : (hook.WebhookType == "Slack" ? "#fef3c7" : "#dcfce7")); color: @(hook.WebhookType == "Generic" ? "#0369a1" : (hook.WebhookType == "Slack" ? "#b45309" : "#15803d"));">
+                                                @hook.WebhookType
+                                            </span>
+                                        </td>
+                                        <td style="padding: 12px 8px; color: #4b5563;">@hook.ContentType</td>
+                                        <td style="padding: 12px 8px;">
+                                            @if (hook.IsActive)
+                                            {
+                                                <span style="color: #10b981; font-weight: 500;">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color: #9ca3af;">Inactive</span>
+                                            }
+                                        </td>
+                                        <td style="padding: 12px 8px; text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                                            <button @onclick="() => SelectWebhook(hook)" style="padding: 4px 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                                이력
+                                            </button>
+                                            <button @onclick="() => EditWebhook(hook)" style="padding: 4px 8px; background: #ffffff; border: 1px solid #2563eb; color: #2563eb; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                                수정
+                                            </button>
+                                            <button @onclick="() => DeleteWebhookAsync(hook.Id)" style="padding: 4px 8px; background: #fee2e2; border: 1px solid #fca5a5; color: #ef4444; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                                삭제
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <!-- Webhook Form Card -->
+            @if (showForm)
+            {
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 20px;">
+                        @(formModel.Id == 0 ? "새 웹훅 추가" : "웹훅 설정 수정")
+                    </h3>
+
+                    <EditForm Model="@formModel" OnValidSubmit="SaveWebhookAsync" FormName="WebhookForm">
+                        <DataAnnotationsValidator />
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">Payload URL</label>
+                            <InputText @bind-Value="formModel.Url" placeholder="https://example.com/webhook" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+                            <ValidationMessage For="@(() => formModel.Url)" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                        </div>
+
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                            <div style="flex: 1;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">Webhook Type</label>
+                                <InputSelect @bind-Value="formModel.WebhookType" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white; box-sizing: border-box;">
+                                    <option value="Generic">Generic (Default JSON)</option>
+                                    <option value="Slack">Slack Incoming Webhook</option>
+                                    <option value="Discord">Discord Webhook</option>
+                                </InputSelect>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">Content Type</label>
+                                <InputSelect @bind-Value="formModel.ContentType" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: white; box-sizing: border-box;">
+                                    <option value="application/json">application/json</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">Secret Key (선택)</label>
+                            <InputText @bind-Value="formModel.Secret" placeholder="요청 서명용 비밀키" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+                            <span style="font-size: 12px; color: #6b7280; display: block; margin-top: 4px;">설정 시 X-Aristokeides-Signature-256 헤더가 HMAC-SHA256 해시 서명과 함께 전송됩니다.</span>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151;">Trigger Events</label>
+                            <div style="display: flex; gap: 20px; font-size: 14px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <InputCheckbox @bind-Value="formModel.TriggerPush" /> Push
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <InputCheckbox @bind-Value="formModel.TriggerIssue" /> Issue
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <InputCheckbox @bind-Value="formModel.TriggerPullRequest" /> Pull Request
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                <InputCheckbox @bind-Value="formModel.IsActive" style="width: 16px; height: 16px;" /> 웹훅 활성화
+                            </label>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                            <button type="button" @onclick="CancelForm" style="padding: 10px 18px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 6px; color: #374151; font-weight: 600; font-size: 14px; cursor: pointer;">
+                                취소
+                            </button>
+                            <button type="submit" style="padding: 10px 18px; background: #2563eb; border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 14px; cursor: pointer;">
+                                저장
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            }
+
+            <!-- Delivery Log History Timeline -->
+            @if (selectedWebhook != null)
+            {
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">
+                        <h3 style="font-size: 16px; font-weight: 600; margin: 0; word-break: break-all;">
+                            최근 전송 이력 (@selectedWebhook.Url)
+                        </h3>
+                        <button @onclick="LoadDeliveriesAsync" style="padding: 4px 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            새로고침
+                        </button>
+                    </div>
+
+                    @if (!deliveries.Any())
+                    {
+                        <p style="color: #6b7280; font-size: 14px; text-align: center; padding: 16px 0;">기록된 전송 내역이 없습니다.</p>
+                    }
+                    else
+                    {
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            @foreach (var log in deliveries)
+                            {
+                                <div @onclick="() => OpenDeliveryDetail(log)" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: #ffffff;" class="delivery-item">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        @if (log.IsSuccess)
+                                        {
+                                            <span style="color: #10b981; font-weight: bold; font-size: 16px;">✔</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: #ef4444; font-weight: bold; font-size: 16px;">⚠</span>
+                                        }
+                                        <div style="font-size: 14px;">
+                                            <strong style="color: #111827;">@log.EventType</strong>
+                                            <span style="color: #6b7280; font-size: 12px; margin-left: 8px;">@log.DeliveryId</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #4b5563;">
+                                        <span>Status: <strong>@log.HttpStatusCode</strong></span>
+                                        <span>@log.DurationMs ms</span>
+                                        <span style="color: #9ca3af; font-size: 12px;">@log.DeliveredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+        </div>
+    }
+</div>
+
+<!-- Delivery Detail Modal Dialog -->
+@if (selectedDelivery != null)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; border-radius: 8px; width: 85%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+            <div style="padding: 16px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
+                <h4 style="margin: 0; font-size: 16px; font-weight: 600;">전송 상세 내역 (UUID: @selectedDelivery.DeliveryId)</h4>
+                <button @onclick="CloseDeliveryDetail" style="background: none; border: none; font-size: 20px; font-weight: bold; cursor: pointer; color: #9ca3af;">&times;</button>
+            </div>
+            
+            <div style="padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; font-size: 13px;">
+                <div style="display: flex; gap: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
+                    <div>
+                        <span style="color: #6b7280; display: block; margin-bottom: 2px;">Event</span>
+                        <strong>@selectedDelivery.EventType</strong>
+                    </div>
+                    <div>
+                        <span style="color: #6b7280; display: block; margin-bottom: 2px;">HTTP Status</span>
+                        <strong style="color: @(selectedDelivery.IsSuccess ? "#10b981" : "#ef4444");">@selectedDelivery.HttpStatusCode</strong>
+                    </div>
+                    <div>
+                        <span style="color: #6b7280; display: block; margin-bottom: 2px;">Duration</span>
+                        <strong>@selectedDelivery.DurationMs ms</strong>
+                    </div>
+                    <div>
+                        <span style="color: #6b7280; display: block; margin-bottom: 2px;">Time</span>
+                        <strong>@selectedDelivery.DeliveredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</strong>
+                    </div>
+                </div>
+
+                <!-- Request Section -->
+                <div>
+                    <h5 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #111827;">Request Headers</h5>
+                    <pre style="margin: 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace;">@FormatJson(selectedDelivery.RequestHeaders)</pre>
+                </div>
+                <div>
+                    <h5 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #111827;">Request Body</h5>
+                    <pre style="margin: 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace;">@FormatJson(selectedDelivery.RequestBody)</pre>
+                </div>
+
+                <!-- Response Section -->
+                <div>
+                    <h5 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #111827;">Response Headers</h5>
+                    <pre style="margin: 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace;">@FormatJson(selectedDelivery.ResponseHeaders)</pre>
+                </div>
+                <div>
+                    <h5 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #111827;">Response Body</h5>
+                    <pre style="margin: 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-family: monospace;">@selectedDelivery.ResponseBody</pre>
+                </div>
+            </div>
+
+            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
+                <button @onclick="() => RedeliverAsync(selectedDelivery.Id)" disabled="@isRedelivering" style="padding: 8px 16px; background: #10b981; border: none; border-radius: 6px; color: white; font-weight: 600; cursor: pointer; opacity: @(isRedelivering ? 0.7 : 1);">
+                    @(isRedelivering ? "재전송 중..." : "수동 재전송")
+                </button>
+                <button @onclick="CloseDeliveryDetail" style="padding: 8px 16px; background: white; border: 1px solid #d1d5db; border-radius: 6px; color: #374151; font-weight: 600; cursor: pointer;">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .delivery-item:hover {
+        background-color: #f9fafb !important;
+    }
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+@code {
+    [Parameter] public string Username { get; set; } = "";
+    [Parameter] public string RepoName { get; set; } = "";
+
+    private Repository? repository;
+    private bool isLoading = true;
+    private bool showForm = false;
+    private string? successMessage;
+    private string? errorMessage;
+    private int currentUserId;
+
+    private List<Webhook> webhooks = new();
+    private Webhook? selectedWebhook;
+    private List<WebhookDelivery> deliveries = new();
+    private WebhookDelivery? selectedDelivery;
+
+    private WebhookFormModel formModel = new();
+    private bool isRedelivering = false;
+
+    public class WebhookFormModel
+    {
+        public int Id { get; set; }
+        
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "웹훅 대상 URL을 입력해 주세요.")]
+        [System.ComponentModel.DataAnnotations.Url(ErrorMessage = "올바른 URL 형식(http/https)이어야 합니다.")]
+        public string Url { get; set; } = "";
+        
+        public string? Secret { get; set; }
+        public string ContentType { get; set; } = "application/json";
+        public string WebhookType { get; set; } = "Generic"; // Generic, Slack, Discord
+        public bool IsActive { get; set; } = true;
+        
+        public bool TriggerPush { get; set; } = true;
+        public bool TriggerIssue { get; set; } = false;
+        public bool TriggerPullRequest { get; set; } = false;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null)
+                {
+                    currentUserId = int.Parse(userIdClaim.Value);
+                }
+
+                repository = await DbContext.Repositories
+                    .Include(r => r.Owner)
+                    .Include(r => r.Organization)
+                    .FirstOrDefaultAsync(r => 
+                        (r.Owner != null && r.Owner.Username == Username && r.Name == RepoName) ||
+                        (r.Organization != null && r.Organization.Name == Username && r.Name == RepoName));
+
+                if (repository != null)
+                {
+                    // 권한 검사 (저장소 소유자 또는 조직 소유자만 설정 접근 허용)
+                    bool hasSettingsAccess = false;
+                    if (repository.OwnerId == currentUserId)
+                    {
+                        hasSettingsAccess = true;
+                    }
+                    else if (repository.OrganizationId.HasValue)
+                    {
+                        bool isOrgOwner = await DbContext.OrganizationMembers.AnyAsync(om =>
+                            om.OrganizationId == repository.OrganizationId.Value &&
+                            om.UserId == currentUserId &&
+                            om.Role == "Owner");
+                        if (isOrgOwner)
+                        {
+                            hasSettingsAccess = true;
+                        }
+                    }
+
+                    if (!hasSettingsAccess)
+                    {
+                        repository = null;
+                    }
+                    else
+                    {
+                        await LoadWebhooksAsync();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "설정을 로드하는 중 오류가 발생했습니다: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadWebhooksAsync()
+    {
+        if (repository == null) return;
+        webhooks = await DbContext.Webhooks
+            .Where(w => w.RepositoryId == repository.Id)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+    }
+
+    private void ShowCreateForm()
+    {
+        formModel = new WebhookFormModel();
+        showForm = true;
+    }
+
+    private void EditWebhook(Webhook hook)
+    {
+        var events = hook.TriggerEvents.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(e => e.Trim().ToLowerInvariant())
+                                          .ToList();
+
+        formModel = new WebhookFormModel
+        {
+            Id = hook.Id,
+            Url = hook.Url,
+            Secret = hook.Secret,
+            ContentType = hook.ContentType,
+            WebhookType = hook.WebhookType,
+            IsActive = hook.IsActive,
+            TriggerPush = events.Contains("push"),
+            TriggerIssue = events.Contains("issue"),
+            TriggerPullRequest = events.Contains("pull_request")
+        };
+        showForm = true;
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+    }
+
+    private async Task SaveWebhookAsync()
+    {
+        if (repository == null) return;
+        
+        successMessage = null;
+        errorMessage = null;
+
+        var eventsList = new List<string>();
+        if (formModel.TriggerPush) eventsList.Add("push");
+        if (formModel.TriggerIssue) eventsList.Add("issue");
+        if (formModel.TriggerPullRequest) eventsList.Add("pull_request");
+
+        if (!eventsList.Any())
+        {
+            errorMessage = "최소 하나 이상의 트리거 이벤트를 선택해 주세요.";
+            return;
+        }
+
+        var triggerEvents = string.Join(",", eventsList);
+
+        try
+        {
+            if (formModel.Id == 0)
+            {
+                // Create
+                var newHook = new Webhook
+                {
+                    RepositoryId = repository.Id,
+                    Url = formModel.Url,
+                    Secret = formModel.Secret,
+                    ContentType = formModel.ContentType,
+                    WebhookType = formModel.WebhookType,
+                    IsActive = formModel.IsActive,
+                    TriggerEvents = triggerEvents,
+                    CreatedAt = DateTime.UtcNow
+                };
+                DbContext.Webhooks.Add(newHook);
+                successMessage = "새 웹훅이 정상적으로 추가되었습니다.";
+            }
+            else
+            {
+                // Update
+                var existing = await DbContext.Webhooks.FindAsync(formModel.Id);
+                if (existing == null)
+                {
+                    errorMessage = "해당 웹훅을 찾을 수 없습니다.";
+                    return;
+                }
+
+                existing.Url = formModel.Url;
+                existing.Secret = formModel.Secret;
+                existing.ContentType = formModel.ContentType;
+                existing.WebhookType = formModel.WebhookType;
+                existing.IsActive = formModel.IsActive;
+                existing.TriggerEvents = triggerEvents;
+                successMessage = "웹훅 설정이 변경되었습니다.";
+            }
+
+            await DbContext.SaveChangesAsync();
+            showForm = false;
+            await LoadWebhooksAsync();
+            selectedWebhook = null;
+            deliveries.Clear();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "웹훅 저장 중 오류가 발생했습니다: " + ex.Message;
+        }
+    }
+
+    private async Task DeleteWebhookAsync(int id)
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            var hook = await DbContext.Webhooks.FindAsync(id);
+            if (hook != null)
+            {
+                DbContext.Webhooks.Remove(hook);
+                await DbContext.SaveChangesAsync();
+                successMessage = "웹훅이 삭제되었습니다.";
+                await LoadWebhooksAsync();
+                
+                if (selectedWebhook?.Id == id)
+                {
+                    selectedWebhook = null;
+                    deliveries.Clear();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "웹훅 삭제 중 오류가 발생했습니다: " + ex.Message;
+        }
+    }
+
+    private async Task SelectWebhook(Webhook hook)
+    {
+        selectedWebhook = hook;
+        await LoadDeliveriesAsync();
+    }
+
+    private async Task LoadDeliveriesAsync()
+    {
+        if (selectedWebhook == null) return;
+        deliveries = await DbContext.WebhookDeliveries
+            .Where(d => d.WebhookId == selectedWebhook.Id)
+            .OrderByDescending(d => d.DeliveredAt)
+            .Take(50)
+            .ToListAsync();
+    }
+
+    private void OpenDeliveryDetail(WebhookDelivery log)
+    {
+        selectedDelivery = log;
+    }
+
+    private void CloseDeliveryDetail()
+    {
+        selectedDelivery = null;
+    }
+
+    private async Task RedeliverAsync(int deliveryLogId)
+    {
+        isRedelivering = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var success = await WebhookService.RedeliverAsync(deliveryLogId);
+            if (success)
+            {
+                successMessage = "해당 웹훅의 재전송 요청을 비동기 큐에 정상 등록했습니다.";
+                CloseDeliveryDetail();
+                await Task.Delay(1000); // 워커가 새 로그를 저장할 수 있는 짧은 대기시간 부여
+                await LoadDeliveriesAsync();
+            }
+            else
+            {
+                errorMessage = "재전송 요청 처리에 실패했습니다. 웹훅 URL 설정 등을 확인해 주세요.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "재전송 중 오류 발생: " + ex.Message;
+        }
+        finally
+        {
+            isRedelivering = false;
+        }
+    }
+
+    private string FormatJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return string.Empty;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+}
