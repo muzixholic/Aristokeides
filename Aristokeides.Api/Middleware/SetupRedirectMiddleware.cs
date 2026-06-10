@@ -21,6 +21,7 @@ public class SetupRedirectMiddleware
         var isExempt = path != null && (
             path.StartsWith("/setup") || 
             path.StartsWith("/_framework") || 
+            path.StartsWith("/_blazor") || 
             path.StartsWith("/css") || 
             path.StartsWith("/js") ||
             path.StartsWith("/lib") ||

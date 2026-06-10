@@ -1,4 +1,5 @@
 @page "/setup"
+@rendermode @(RenderMode.InteractiveServer)
 @using Aristokeides.Api.Models
 @using Aristokeides.Api.Services
 @inject SetupService SetupService
@@ -23,7 +24,7 @@
                 <h3>1. Database Configuration</h3>
                 <div class="form-group">
                     <label>Database Type</label>
-                    <InputSelect @bind-Value="Model.DatabaseProvider" class="form-select">
+                    <InputSelect @bind-Value="Model.DatabaseProvider" @bind-Value:after="OnDatabaseProviderChanged" class="form-select">
                         <option value="SQLite">SQLite (Recommended for simple setups)</option>
                         <option value="PostgreSQL">PostgreSQL</option>
                         <option value="MySQL">MySQL / MariaDB</option>
@@ -238,6 +239,28 @@
 
     private string? ErrorMessage { get; set; }
     private bool IsLoading { get; set; }
+
+    private void OnDatabaseProviderChanged()
+    {
+        if (Model.DatabaseProvider == "PostgreSQL")
+        {
+            Model.DbPort = 5432;
+            Model.DbHost = "localhost";
+            Model.DbName = "aristokeides";
+            Model.DbUsername = "postgres";
+        }
+        else if (Model.DatabaseProvider == "MySQL")
+        {
+            Model.DbPort = 3306;
+            Model.DbHost = "localhost";
+            Model.DbName = "aristokeides";
+            Model.DbUsername = "root";
+        }
+        else if (Model.DatabaseProvider == "SQLite")
+        {
+            Model.SqliteFilePath = "aristokeides.db";
+        }
+    }
 
     private async Task HandleSetup()
     {

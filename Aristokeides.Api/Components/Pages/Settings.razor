@@ -324,15 +324,14 @@
     private string? currentSessionId;
     private bool isLoadingSessions = true;
 
-    private void SwitchTab(string tab)
+    private async Task SwitchTab(string tab)
     {
         activeTab = tab;
         errorMessage = null;
         successMessage = null;
         if (tab == "2fa")
         {
-            _ = Load2FaStatusAsync();
-            _ = LoadSessionsAsync();
+            await Task.WhenAll(Load2FaStatusAsync(), LoadSessionsAsync());
         }
     }
 
@@ -491,6 +490,7 @@
         finally
         {
             isLoading2Fa = false;
+            StateHasChanged();
         }
     }
 
@@ -655,6 +655,7 @@
         finally
         {
             isLoadingSessions = false;
+            StateHasChanged();
         }
     }
 
