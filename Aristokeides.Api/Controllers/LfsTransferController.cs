@@ -57,6 +57,24 @@ public class LfsTransferController : ControllerBase
         return sb.ToString();
     }
 
+    private async Task<bool> CheckReadAccessAsync(Repository repo, int userId)
+    {
+        if (!repo.IsPrivate) return true;
+        if (repo.OwnerId == userId) return true;
+
+        if (repo.OrganizationId.HasValue)
+        {
+            var isOrgMember = await _db.OrganizationMembers.AnyAsync(om => 
+                om.OrganizationId == repo.OrganizationId.Value && om.UserId == userId);
+            if (isOrgMember) return true;
+        }
+
+        return await _db.RepositoryPermissions.AnyAsync(rp => 
+            rp.RepositoryId == repo.Id && 
+            rp.UserId == userId && 
+            (rp.AccessLevel == "Read" || rp.AccessLevel == "Write" || rp.AccessLevel == "Admin"));
+    }
+
     // --- Endpoints ---
 
     // 1. Download
@@ -68,12 +86,26 @@ public class LfsTransferController : ControllerBase
             return NotFound();
 
         var token = GetBearerToken();
-        if (token == null)
-            return Unauthorized();
+        if (token != null)
+        {
+            var principal = _lfs.ValidateToken(token, repository.Id, oid, "download");
+            if (principal == null)
+                return Forbid();
+        }
+        else
+        {
+            // Web UI 브라우저 직접 요청 대응 (Cookie 인증 확인)
+            if (User.Identity?.IsAuthenticated != true)
+                return Unauthorized();
 
-        var principal = _lfs.ValidateToken(token, repository.Id, oid, "download");
-        if (principal == null)
-            return Forbid();
+            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out var userId))
+                return Unauthorized();
+
+            var hasAccess = await CheckReadAccessAsync(repository, userId);
+            if (!hasAccess)
+                return Forbid();
+        }
 
         var filePath = _lfs.GetObjectPath(oid);
         if (!System.IO.File.Exists(filePath))

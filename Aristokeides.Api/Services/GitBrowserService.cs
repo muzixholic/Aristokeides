@@ -7,6 +7,16 @@ namespace Aristokeides.Api.Services;
 
 public record GitTreeEntry(string Name, string Path, bool IsFolder, string ObjectId);
 
+public class GitBlobInfo
+{
+    public string Path { get; set; } = "";
+    public string? TextContent { get; set; }
+    public bool IsBinary { get; set; }
+    public bool IsLfsPointer { get; set; }
+    public string? LfsOid { get; set; }
+    public long LfsSize { get; set; }
+}
+
 public record GitCommitInfo(
     string Hash, 
     string Message, 
@@ -93,6 +103,57 @@ public class GitBrowserService
         if (blob.IsBinary) return null;
 
         return blob.GetContentText();
+    }
+
+    public GitBlobInfo? GetBlobInfo(string repoPath, string branch, string path)
+    {
+        using var repo = new Repository(repoPath);
+        var branchRef = repo.Branches[branch];
+        if (branchRef == null || branchRef.Tip == null) return null;
+
+        var entry = branchRef.Tip[path];
+        if (entry == null || entry.TargetType != TreeEntryTargetType.Blob) return null;
+
+        var blob = (Blob)entry.Target;
+        
+        var result = new GitBlobInfo
+        {
+            Path = path,
+            IsBinary = blob.IsBinary
+        };
+
+        if (!blob.IsBinary)
+        {
+            var content = blob.GetContentText();
+            result.TextContent = content;
+
+            if (content != null && content.Length <= 300 && content.StartsWith("version https://git-lfs.github.com/spec/v1"))
+            {
+                var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                string? oid = null;
+                long size = 0;
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("oid sha256:"))
+                    {
+                        oid = line.Substring("oid sha256:".Length).Trim();
+                    }
+                    else if (line.StartsWith("size "))
+                    {
+                        long.TryParse(line.Substring("size ".Length).Trim(), out size);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(oid) && oid.Length == 64)
+                {
+                    result.IsLfsPointer = true;
+                    result.LfsOid = oid;
+                    result.LfsSize = size;
+                }
+            }
+        }
+
+        return result;
     }
 
     public async Task<(List<GitCommitInfo> Commits, bool HasNextPage)> GetCommitsAsync(string repoPath, string branch, int page, int pageSize)

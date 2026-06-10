@@ -203,17 +203,44 @@ public class LfsApiController : ControllerBase
         if (access == null)
             return Forbid();
 
-        // [Skeleton Response] (Locks business logic integrated in Wave 3)
-        var dummyLock = new LfsLockInfo
+        var existingLock = await _db.LfsLocks
+            .Include(l => l.User)
+            .FirstOrDefaultAsync(l => l.RepositoryId == validatedRepo.Id && l.Path == request.Path);
+
+        if (existingLock != null)
         {
-            Id = "dummy-lock-id",
+            var conflictLock = new LfsLockInfo
+            {
+                Id = existingLock.Id.ToString(),
+                Path = existingLock.Path,
+                LockedAt = existingLock.LockedAt,
+                Owner = new LfsLockOwner { Name = existingLock.User.Username }
+            };
+            Response.ContentType = "application/vnd.git-lfs+json";
+            return StatusCode(409, new { @lock = conflictLock, message = "already locked" });
+        }
+
+        var newLock = new LfsLock
+        {
+            RepositoryId = validatedRepo.Id,
+            UserId = validatedUser!.Id,
             Path = request.Path,
-            LockedAt = DateTime.UtcNow,
-            Owner = new LfsLockOwner { Name = validatedUser!.Username }
+            LockedAt = DateTime.UtcNow
+        };
+
+        _db.LfsLocks.Add(newLock);
+        await _db.SaveChangesAsync();
+
+        var lockInfo = new LfsLockInfo
+        {
+            Id = newLock.Id.ToString(),
+            Path = newLock.Path,
+            LockedAt = newLock.LockedAt,
+            Owner = new LfsLockOwner { Name = validatedUser.Username }
         };
 
         Response.ContentType = "application/vnd.git-lfs+json";
-        return StatusCode(201, new { @lock = dummyLock });
+        return StatusCode(201, new { @lock = lockInfo });
     }
 
     // 3. Lock 목록 조회 API
@@ -227,10 +254,31 @@ public class LfsApiController : ControllerBase
         if (access == null)
             return Forbid();
 
+        var query = _db.LfsLocks
+            .Include(l => l.User)
+            .Where(l => l.RepositoryId == validatedRepo.Id);
+
+        if (!string.IsNullOrEmpty(path))
+        {
+            query = query.Where(l => l.Path == path);
+        }
+
+        var locks = await query.ToListAsync();
         var response = new LfsLocksResponse
         {
             Locks = new List<LfsLockInfo>()
         };
+
+        foreach (var l in locks)
+        {
+            response.Locks.Add(new LfsLockInfo
+            {
+                Id = l.Id.ToString(),
+                Path = l.Path,
+                LockedAt = l.LockedAt,
+                Owner = new LfsLockOwner { Name = l.User.Username }
+            });
+        }
 
         Response.ContentType = "application/vnd.git-lfs+json";
         return Ok(response);
@@ -240,18 +288,43 @@ public class LfsApiController : ControllerBase
     [HttpPost("locks/verify")]
     public async Task<IActionResult> VerifyLocks([FromRoute] string owner, [FromRoute] string repo, [FromBody] LfsVerifyLocksRequest request)
     {
-        var (validatedRepo, _, access) = await GetValidatedRepoAndUserAsync(owner, repo, "Write");
+        var (validatedRepo, validatedUser, access) = await GetValidatedRepoAndUserAsync(owner, repo, "Write");
         
         if (validatedRepo == null)
             return NotFound();
         if (access == null)
             return Forbid();
 
+        var locks = await _db.LfsLocks
+            .Include(l => l.User)
+            .Where(l => l.RepositoryId == validatedRepo.Id)
+            .ToListAsync();
+
         var response = new LfsVerifyLocksResponse
         {
             Ours = new List<LfsLockInfo>(),
             Theirs = new List<LfsLockInfo>()
         };
+
+        foreach (var l in locks)
+        {
+            var lockInfo = new LfsLockInfo
+            {
+                Id = l.Id.ToString(),
+                Path = l.Path,
+                LockedAt = l.LockedAt,
+                Owner = new LfsLockOwner { Name = l.User.Username }
+            };
+
+            if (l.UserId == validatedUser!.Id)
+            {
+                response.Ours.Add(lockInfo);
+            }
+            else
+            {
+                response.Theirs.Add(lockInfo);
+            }
+        }
 
         Response.ContentType = "application/vnd.git-lfs+json";
         return Ok(response);
@@ -268,16 +341,42 @@ public class LfsApiController : ControllerBase
         if (access == null)
             return Forbid();
 
-        var dummyLock = new LfsLockInfo
+        if (!int.TryParse(id, out var lockId))
+            return BadRequest(new { message = "Invalid lock ID format." });
+
+        var lfsLock = await _db.LfsLocks
+            .Include(l => l.User)
+            .FirstOrDefaultAsync(l => l.RepositoryId == validatedRepo.Id && l.Id == lockId);
+
+        if (lfsLock == null)
+            return NotFound(new { message = "Lock not found." });
+
+        bool isOwner = lfsLock.UserId == validatedUser!.Id;
+        bool isAdmin = access == "Admin";
+
+        if (!isOwner && !isAdmin)
         {
-            Id = id,
-            Path = "dummy/path",
-            LockedAt = DateTime.UtcNow,
-            Owner = new LfsLockOwner { Name = validatedUser!.Username }
+            return Forbid();
+        }
+
+        if (request.Force && !isAdmin)
+        {
+            return Forbid();
+        }
+
+        _db.LfsLocks.Remove(lfsLock);
+        await _db.SaveChangesAsync();
+
+        var lockInfo = new LfsLockInfo
+        {
+            Id = lfsLock.Id.ToString(),
+            Path = lfsLock.Path,
+            LockedAt = lfsLock.LockedAt,
+            Owner = new LfsLockOwner { Name = lfsLock.User.Username }
         };
 
         Response.ContentType = "application/vnd.git-lfs+json";
-        return Ok(new { @lock = dummyLock });
+        return Ok(new { @lock = lockInfo });
     }
 }
 

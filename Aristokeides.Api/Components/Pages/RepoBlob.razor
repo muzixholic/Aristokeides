@@ -1,6 +1,7 @@
 @page "/{username}/{repoName}/blob/{branch}/{*path}"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject Aristokeides.Api.Services.GitBrowserService GitService
+@inject Aristokeides.Api.Services.LfsService LfsService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
 
 <PageTitle>@Path - @RepoName - Aristokeides</PageTitle>
@@ -35,11 +36,43 @@ else
     </div>
 
     <div style="border: 1px solid #e5e7eb; border-radius: 4px;">
-        <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; background: var(--secondary);">
+        <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; background: var(--secondary); display: flex; justify-content: space-between; align-items: center;">
             <strong>@parts.Last()</strong>
+            @if (isLfsPointer)
+            {
+                <span style="background: #3b82f6; color: white; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Git LFS</span>
+            }
         </div>
         
-        @if (fileContent == null)
+        @if (isLfsPointer)
+        {
+            <div style="padding: 32px; text-align: center; background: #fafafa;">
+                @if (isImage)
+                {
+                    <div style="margin-bottom: 24px; max-width: 100%; overflow: auto;">
+                        <img src="@imageDataUri" style="max-height: 500px; max-width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);" alt="@parts.Last()" />
+                    </div>
+                }
+                else
+                {
+                    <div style="margin-bottom: 24px;">
+                        <svg style="width: 64px; height: 64px; color: #9ca3af; margin-bottom: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <p style="font-weight: 500; font-size: 1.125rem; margin-bottom: 4px;">LFS 대용량 파일 (@lfsSizeString)</p>
+                        <p style="color: #6b7280; font-size: 0.875rem; font-family: monospace;">OID: @lfsOid</p>
+                    </div>
+                }
+                
+                <a href="/api/lfs/@Username/@RepoName/download/@lfsOid" class="btn btn-primary" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;" download="@parts.Last()">
+                    <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    파일 다운로드
+                </a>
+            </div>
+        }
+        else if (fileContent == null)
         {
             <div style="padding: 16px;">바이너리 파일이거나 내용을 표시할 수 없습니다.</div>
         }
@@ -62,8 +95,21 @@ else
     private string? fileContent;
     private string fileExtension = "";
 
+    // LFS 상태 필드
+    private bool isLfsPointer = false;
+    private bool isImage = false;
+    private string? lfsOid;
+    private string lfsSizeString = "";
+    private string? imageDataUri;
+
     protected override async Task OnParametersSetAsync()
     {
+        isLfsPointer = false;
+        isImage = false;
+        lfsOid = null;
+        lfsSizeString = "";
+        imageDataUri = null;
+
         var authState = await AuthState.GetAuthenticationStateAsync();
         var user = authState.User;
         if (!user.Identity?.IsAuthenticated ?? true)
@@ -88,11 +134,51 @@ else
 
         try
         {
-            fileContent = GitService.GetBlobContent(repoPath, Branch, Path);
             var ext = System.IO.Path.GetExtension(Path);
             if (!string.IsNullOrEmpty(ext))
             {
                 fileExtension = ext.Substring(1); // remove dot
+            }
+
+            var blobInfo = GitService.GetBlobInfo(repoPath, Branch, Path);
+            if (blobInfo != null)
+            {
+                if (blobInfo.IsLfsPointer)
+                {
+                    isLfsPointer = true;
+                    lfsOid = blobInfo.LfsOid;
+                    lfsSizeString = FormatSize(blobInfo.LfsSize);
+
+                    // 이미지 형식인지 확인
+                    var imageExtensions = new[] { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp" };
+                    isImage = imageExtensions.Contains(ext.ToLowerInvariant());
+
+                    if (isImage && !string.IsNullOrEmpty(lfsOid))
+                    {
+                        // LfsService에서 직접 바이트를 로드하여 base64 데이터 생성
+                        var lfsFilePath = LfsService.GetObjectPath(lfsOid);
+                        if (System.IO.File.Exists(lfsFilePath))
+                        {
+                            var bytes = await System.IO.File.ReadAllBytesAsync(lfsFilePath);
+                            var base64 = Convert.ToBase64String(bytes);
+                            var mimeType = GetMimeType(ext);
+                            imageDataUri = $"data:{mimeType};base64,{base64}";
+                        }
+                        else
+                        {
+                            // 로컬 스토리지에 파일이 아직 업로드되지 않은 경우
+                            isImage = false;
+                        }
+                    }
+                }
+                else
+                {
+                    fileContent = blobInfo.TextContent;
+                }
+            }
+            else
+            {
+                fileContent = null;
             }
         }
         catch (LibGit2Sharp.NotFoundException)
@@ -102,6 +188,33 @@ else
         catch (Exception ex)
         {
             errorMessage = "오류가 발생했습니다: " + ex.Message;
+        }
+    }
+
+    private string FormatSize(long bytes)
+    {
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+        return $"{size:F2} {units[unitIndex]}";
+    }
+
+    private string GetMimeType(string ext)
+    {
+        switch (ext.ToLowerInvariant())
+        {
+            case ".png": return "image/png";
+            case ".jpg":
+            case ".jpeg": return "image/jpeg";
+            case ".gif": return "image/gif";
+            case ".webp": return "image/webp";
+            case ".bmp": return "image/bmp";
+            default: return "application/octet-stream";
         }
     }
 }
