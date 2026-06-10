@@ -6,7 +6,7 @@
 - ✅ **v1.1 SSH & Advanced Code Review** — (shipped)
 - ✅ **v1.2 Web UI Completion** — (shipped)
 - ✅ **v1.3 Deployment & Setup** — (shipped 2026-06-09)
-- 📅 **v1.4 웹훅, LFS, 조직 및 보안 기능 강화** — Phases 18-21 (planned)
+- ✅ **v1.4 웹훅, LFS, 조직 및 보안 기능 강화** — Phases 18-21 (shipped 2026-06-10)
 
 ## Phases
 
@@ -26,9 +26,9 @@
 - [x] LFS 파일 업로드/다운로드 인증 구현 및 웹 UI에서 LFS 파일 감지/다운로드 처리
 
 ### Phase 21: 웹훅 및 외부 연동
-- [ ] 저장소 이벤트 발생 시 웹훅 페이로드 전송 및 개별 저장소 웹훅 관리 기능 구현
-- [ ] 웹훅 전송 상세 기록(Delivery Log) 관리 및 수동 재전송(Redelivery) 기능 구현
-- [ ] 슬랙(Slack), 디스코드(Discord) 템플릿 연동 및 알림 기능 확장
+- [x] 저장소 이벤트 발생 시 웹훅 페이로드 전송 및 개별 저장소 웹훅 관리 기능 구현
+- [x] 웹훅 전송 상세 기록(Delivery Log) 관리 및 수동 재전송(Redelivery) 기능 구현
+- [x] 슬랙(Slack), 디스코드(Discord) 템플릿 연동 및 알림 기능 확장
 
 ## Previous Milestones
 
