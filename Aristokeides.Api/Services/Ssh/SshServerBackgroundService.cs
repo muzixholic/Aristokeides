@@ -69,7 +69,6 @@ public class SshServerBackgroundService : BackgroundService
         }
 
         var config = new SshSessionConfiguration();
-        config.AddService(typeof(Microsoft.DevTunnels.Ssh.Services.SshService)); // Wait, maybe AuthenticationService is built-in or handled automatically?
         
         var listener = new TcpListener(IPAddress.Any, _port);
         listener.Start();
@@ -102,7 +101,10 @@ public class SshServerBackgroundService : BackgroundService
         try
         {
             using var stream = client.GetStream();
-            var session = new SshServerSession(config, new System.Diagnostics.TraceSource("SshServer"));
+            var traceSource = new System.Diagnostics.TraceSource("SshServer");
+            traceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
+            traceSource.Listeners.Add(new System.Diagnostics.ConsoleTraceListener());
+            var session = new SshServerSession(config, traceSource);
             session.Credentials = new SshServerCredentials(new[] { hostKeyPair });
             
             session.Authenticating += (sender, e) => OnAuthenticating(sender, e, clientIp);
@@ -253,39 +255,34 @@ public class SshServerBackgroundService : BackgroundService
 
     private async Task OnChannelRequestAsync(SshChannel channel, SshRequestEventArgs<Microsoft.DevTunnels.Ssh.Messages.ChannelRequestMessage> e, ClaimsPrincipal principal)
     {
-        if (e.Request.RequestType != "exec")
+        int userId = int.Parse(principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+        string username = principal.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "";
+        var state = new SshSessionState { UserId = userId, Username = username };
+
+        if (e.Request.RequestType == "shell" || 
+           (e.Request is Microsoft.DevTunnels.Ssh.Messages.CommandRequestMessage cmdReq && string.IsNullOrEmpty(cmdReq.Command)))
+        {
+            e.IsAuthorized = true; // For welcome message
+            byte[] welcomeMessage = System.Text.Encoding.UTF8.GetBytes(
+                $"Hi {state.Username}! You've successfully authenticated, but Aristokeides does not provide shell access.\r\n"
+            );
+            await channel.SendAsync(welcomeMessage, CancellationToken.None);
+            await channel.CloseAsync(0, CancellationToken.None);
+            return;
+        }
+
+        if (e.Request.RequestType != "exec" || !(e.Request is Microsoft.DevTunnels.Ssh.Messages.CommandRequestMessage execReq))
         {
             e.IsAuthorized = false;
             return;
         }
-        
-        e.IsAuthorized = true;
 
-        if (e.Request is Microsoft.DevTunnels.Ssh.Messages.CommandRequestMessage execReq)
-        {
-            string cmd = execReq.Command ?? string.Empty;
-            
-            int userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            string username = principal.FindFirst(ClaimTypes.Name)?.Value ?? "";
-            
-            var state = new SshSessionState { UserId = userId, Username = username };
+        string cmd = execReq.Command ?? string.Empty;
 
-            if (string.IsNullOrEmpty(cmd))
-            {
-                byte[] welcomeMessage = System.Text.Encoding.UTF8.GetBytes(
-                    $"Hi {state.Username}! You've successfully authenticated, but Aristokeides does not provide shell access.\r\n"
-                );
-                await channel.SendAsync(welcomeMessage, CancellationToken.None);
-                await channel.CloseAsync(0, CancellationToken.None);
-                return;
-            }
-
-            // Whitelist check
+        // Whitelist check
             if (!cmd.StartsWith("git-upload-pack") && !cmd.StartsWith("git-receive-pack"))
             {
-                byte[] errorMessage = System.Text.Encoding.UTF8.GetBytes("Interactive shell is not allowed.\r\n");
-                await channel.SendAsync(errorMessage, CancellationToken.None);
-                await channel.CloseAsync(1, CancellationToken.None);
+                e.IsAuthorized = false; // Reject cleanly!
                 return;
             }
 
@@ -293,7 +290,7 @@ public class SshServerBackgroundService : BackgroundService
             var parts = cmd.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 2)
             {
-                await channel.CloseAsync(1, CancellationToken.None);
+                e.IsAuthorized = false;
                 return;
             }
 
@@ -303,9 +300,11 @@ public class SshServerBackgroundService : BackgroundService
             // Directory Traversal check
             if (repoPath.Contains(".."))
             {
-                await channel.CloseAsync(1, CancellationToken.None);
+                e.IsAuthorized = false; // Reject cleanly!
                 return;
             }
+
+            e.IsAuthorized = true; // Fully authorized
 
             // Normalize path
             repoPath = repoPath.TrimStart('/');
@@ -412,6 +411,5 @@ public class SshServerBackgroundService : BackgroundService
             // Pass to bridge
             var bridge = scope.ServiceProvider.GetRequiredService<SshCommandBridge>();
             await bridge.RunGitCommandAsync(channel, commandName, repoPath, state);
-        }
     }
 }

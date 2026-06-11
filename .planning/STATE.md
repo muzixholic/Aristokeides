@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
-status: executing
-stopped_at: Phase 24 planned
-last_updated: "2026-06-11T03:52:55.633Z"
-last_activity: 2026-06-11 -- Phase 24 execution started
+status: planning
+stopped_at: Phase 24 executed, Phase 25 ready
+last_updated: "2026-06-11T06:28:00.000Z"
+last_activity: 2026-06-11 -- Phase 24 execution completed
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
-**Status:** Executing Phase 24
-**Current focus:** Phase 24 — ssh
-**Current Position:** Phase 24 planned, ready to execute
+**Status:** Planning Phase 25
+**Current focus:** Phase 25 — integration & docs
+**Current Position:** Phase 24 executed, Phase 25 ready to plan
 
 ## Last Session
 
-**Stopped at:** Phase 24 planned
-**Resume file:** .planning/phases/24-ssh/24-PLAN.md
+**Stopped at:** Phase 24 executed
+**Resume file:** .planning/ROADMAP.md
 
 ## Decisions
 
@@ -49,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: 24 (ssh) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 24
-Last activity: 2026-06-11 -- Phase 24 execution started
+Phase: 25 (integration & docs) — PLANNING
+Plan: TBD
+Status: Ready to plan Phase 25
+Last activity: 2026-06-11 -- Phase 24 execution completed
 
 ## Operator Next Steps
 
-- Execute Phase 24 using /gsd-execute-phase 24
+- Plan Phase 25 using /gsd-progress or /gsd-discuss-phase 25
