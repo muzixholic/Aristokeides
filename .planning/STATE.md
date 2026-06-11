@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
 status: active
-stopped_at: Phase 22 execution complete
-last_updated: "2026-06-11T11:27:00.000Z"
-last_activity: 2026-06-11 — Completed Phase 22 (bUnit unit tests)
+stopped_at: Phase 23 execution complete
+last_updated: "2026-06-11T11:37:00.000Z"
+last_activity: 2026-06-11 — Completed Phase 23 (Playwright E2E tests)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 25
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -49,12 +49,12 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: Phase 23 awaiting planning
+Phase: Phase 24 awaiting planning
 Plan: —
 Status: Ready to plan
-Last activity: 2026-06-11 — Phase 22 (bUnit unit tests) completed
+Last activity: 2026-06-11 — Phase 23 (Playwright E2E tests) completed
 
 ## Operator Next Steps
 
-- Create the plan for Phase 23 using /gsd-discuss-phase 23
+- Create the plan for Phase 24 using /gsd-discuss-phase 24
 

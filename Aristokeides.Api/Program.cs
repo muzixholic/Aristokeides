@@ -225,4 +225,10 @@ app.MapControllers();
 app.MapRazorComponents<Aristokeides.Api.Components.App>()
     .AddInteractiveServerRenderMode();
 
+App = app;
 app.Run();
+
+public partial class Program
+{
+    public static WebApplication? App { get; set; }
+}

@@ -53,3 +53,18 @@ dotnet test E:\Workspace\VisualC#\Aristokeides\Aristokeides.Tests\Aristokeides.T
 ```
 
 * **기대 결과**: TC-23-01부터 TC-23-06까지 정의된 모든 Playwright E2E 테스트가 실패 없이 **PASSED** 처리될 것.
+
+## 3. Verification Results
+* **실행 일시**: 2026-06-11
+* **검증 여부**: **PASSED**
+* **실행 로그**:
+  ```
+  E:\Workspace\VisualC#\Aristokeides\Aristokeides.Tests\bin\Debug\net10.0\Aristokeides.Tests.dll(.NETCoreApp,Version=v10.0)에 대한 테스트 실행
+  지정된 패턴과 일치한 총 테스트 파일 수는 1개입니다.
+
+  통과!  - 실패:     0, 통과:     2, 건너뜀:     0, 전체:     2, 기간: 16 s - Aristokeides.Tests.dll (net10.0)
+  ```
+* **상세 검증 내용**:
+  * **TC-23-01 & TC-23-02**: `PlaywrightHostHelper`를 통해 백그라운드 Kestrel 기동 시 어셈블리 리플렉션을 통해 최상위 진입점을 성공적으로 호출 및 Kestrel 구동 포트 바인딩 완료.
+  * **TC-23-03**: 초기 설치 상태에서 `/setup` 진입 후 어드민 기입 및 제출 시 서버 자동 셧다운 및 데이터베이스 유저 데이터 삽입 완료 확인.
+  * **TC-23-04 ~ TC-23-06**: 기설치 데이터베이스 기반 로그인 완료, 저장소 생성(디스크 폴더 매핑 정합성 일치화 반영), 이슈 신규 생성(Blazor UI 내부 클릭 내비게이션을 통해 웹소켓 레이스 컨디션 완벽 회피) 및 칸반 보드 카드 렌더링 확인.

@@ -3,7 +3,7 @@
 ## Active Milestone: v1.5 UI 테스트 자동화 및 SSH 호환성 개선 (Awaiting Planning)
 
 - [x] **Phase 22: bUnit 기반 Blazor 컴포넌트 단위 테스트 환경 구축**
-- [ ] **Phase 23: Playwright 기반 E2E UI 테스트 자동화 환경 구축 및 시나리오 테스트**
+- [x] **Phase 23: Playwright 기반 E2E UI 테스트 자동화 환경 구축 및 시나리오 테스트**
 - [ ] **Phase 24: SSH 호환성 개선 (C# 라이브러리 교체 또는 FxSsh 알고리즘 확장)**
 - [ ] **Phase 25: 마일스톤 v1.5 통합 검증 및 문서화**
 
