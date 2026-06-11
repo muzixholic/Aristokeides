@@ -1,34 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: milestone
-status: completed
-stopped_at: Phase 21 execution complete
-last_updated: "2026-06-11T01:38:19.142Z"
-last_activity: 2026-06-11 — Milestone v1.4 completed and archived
+milestone: v1.5
+milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
+status: active
+stopped_at: Initializing v1.5 requirements and roadmap
+last_updated: "2026-06-11T11:22:00.000Z"
+last_activity: 2026-06-11 — Started Milestone v1.5
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 31
-  completed_plans: 31
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-09)
+See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
-**Status:** v1.4 milestone complete
-**Current focus:** 웹훅, LFS, 조직 및 보안 기능 강화 완료
-**Current Position:** Phase 21 execution complete
+**Status:** v1.5 active
+**Current focus:** UI 테스트 자동화(bUnit & Playwright E2E) 및 SSH 서버의 현대적 호환성 개선
+**Current Position:** Phase 22 awaiting planning
 
 ## Last Session
 
-**Stopped at:** Phase 21 execution complete
-**Resume file:** .planning/phases/21-webhook-external-integration/21-VERIFICATION.md
+**Stopped at:** Initializing v1.5 requirements and roadmap
+**Resume file:** .planning/ROADMAP.md
 
 ## Decisions
 
@@ -49,11 +49,12 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 ## Current Position
 
-Phase: Milestone v1.4 complete
+Phase: Phase 22 awaiting planning
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-11 — Milestone v1.4 completed and archived
+Status: Ready to plan
+Last activity: 2026-06-11 — Milestone v1.5 requirements and roadmap initialized
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Create the plan for Phase 22 using /gsd-discuss-phase 22
+
