@@ -142,6 +142,6 @@ public class OrgRepoCreationTests
         // Assert
         Assert.Equal("myorg", ownerName);
         Assert.Contains("GitRepos", gitPath);
-        Assert.EndsWith("myorg/orgrepo.git", gitPath);
+        Assert.EndsWith(Path.Combine("myorg", "orgrepo.git"), gitPath);
     }
 }

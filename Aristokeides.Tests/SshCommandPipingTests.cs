@@ -102,7 +102,7 @@ public class SshCommandPipingTests : IDisposable
     [Fact]
     public async Task GitUploadPack_ShouldPipeDataAndExitNormally()
     {
-        int testPort = 2226;
+        int testPort = 32226;
         var (publicKey, privateKeyBytes) = GenerateEcdsaKeyPair();
         string fingerprint = SshFingerprintCalculator.CalculateSha256Fingerprint(publicKey);
 
@@ -136,7 +136,7 @@ public class SshCommandPipingTests : IDisposable
         var service = new SshServerBackgroundService(serviceProvider, configuration, new TestLogger<SshServerBackgroundService>());
         var cts = new CancellationTokenSource();
         await service.StartAsync(cts.Token);
-        await Task.Delay(500);
+        await Task.Delay(1500);
 
         try
         {

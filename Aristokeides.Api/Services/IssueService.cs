@@ -49,7 +49,7 @@ public class IssueService
             .FirstOrDefaultAsync(i => i.RepositoryId == repositoryId && i.LocalId == localId);
     }
 
-    public async Task<Issue> CreateIssueAsync(Guid repositoryId, string title, string? description, int creatorId, int? assigneeId = null)
+    public virtual async Task<Issue> CreateIssueAsync(Guid repositoryId, string title, string? description, int creatorId, int? assigneeId = null)
     {
         var todoColumn = await _context.BoardColumns
             .Where(c => c.RepositoryId == repositoryId)

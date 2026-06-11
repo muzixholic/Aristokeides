@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
 status: active
-stopped_at: Initializing v1.5 requirements and roadmap
-last_updated: "2026-06-11T11:22:00.000Z"
-last_activity: 2026-06-11 — Started Milestone v1.5
+stopped_at: Phase 22 execution complete
+last_updated: "2026-06-11T11:27:00.000Z"
+last_activity: 2026-06-11 — Completed Phase 22 (bUnit unit tests)
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -49,12 +49,12 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: Phase 22 awaiting planning
+Phase: Phase 23 awaiting planning
 Plan: —
 Status: Ready to plan
-Last activity: 2026-06-11 — Milestone v1.5 requirements and roadmap initialized
+Last activity: 2026-06-11 — Phase 22 (bUnit unit tests) completed
 
 ## Operator Next Steps
 
-- Create the plan for Phase 22 using /gsd-discuss-phase 22
+- Create the plan for Phase 23 using /gsd-discuss-phase 23
 

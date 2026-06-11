@@ -21,7 +21,7 @@ public class SetupService
         _env = env;
     }
 
-    public async Task<bool> InstallAsync(SetupViewModel model)
+    public virtual async Task<bool> InstallAsync(SetupViewModel model)
     {
         if (_configuration.GetValue<bool>("IsInstalled"))
             return false;
