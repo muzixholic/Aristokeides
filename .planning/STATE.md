@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
 status: v1.5 active
-stopped_at: Phase 24 context gathered
+stopped_at: Phase 24 planned
 last_updated: "2026-06-11T03:42:46.446Z"
 last_activity: 2026-06-11 — Phase 23 (Playwright E2E tests) completed
 progress:
@@ -23,12 +23,12 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 **Core value:** C# / .NET 기반의 뛰어난 성능을 바탕으로, Git 저장소 호스팅, 이슈 트래커, 코드 리뷰 등 협업에 필수적인 핵심 기능들을 가볍고 안정적으로 제공하는 것.
 **Status:** v1.5 active
 **Current focus:** UI 테스트 자동화(bUnit & Playwright E2E) 및 SSH 서버의 현대적 호환성 개선
-**Current Position:** Phase 22 awaiting planning
+**Current Position:** Phase 24 planned, ready to execute
 
 ## Last Session
 
-**Stopped at:** Phase 24 context gathered
-**Resume file:** .planning/phases/24-ssh/24-CONTEXT.md
+**Stopped at:** Phase 24 planned
+**Resume file:** .planning/phases/24-ssh/24-PLAN.md
 
 ## Decisions
 
@@ -49,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: Phase 24 awaiting planning
-Plan: —
-Status: Ready to plan
-Last activity: 2026-06-11 — Phase 23 (Playwright E2E tests) completed
+Phase: Phase 24 planned
+Plan: 24-01 (SSH 서버 라이브러리 교체 + 호스트 키 하이브리드 + DB 감사 로깅)
+Status: Planned — ready to execute
+Last activity: 2026-06-11 — Phase 24 계획 수립 완료
 
 ## Operator Next Steps
 
-- Create the plan for Phase 24 using /gsd-discuss-phase 24
+- Execute Phase 24 using /gsd-execute-phase 24

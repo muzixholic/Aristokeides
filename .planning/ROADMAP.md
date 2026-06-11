@@ -40,10 +40,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. 현대적인 SSH 키(ed25519 등)를 통한 git clone/push 연동 정상 완료.
   2. SSH 키 서버 연동성과 command bridge의 무중단 스트림 릴레이 검증 보장.
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 24-01: TBD
+- [ ] 24-01: SSH 서버 라이브러리 교체 + 호스트 키 하이브리드 + DB 감사 로깅
 
 ### Phase 25: 마일스톤 v1.5 통합 검증 및 문서화
 **Goal**: v1.5의 신규 테스트 자동화 구조 및 SSH 호환성 개선 사항을 통합 검증하고, 마일스톤 종료를 위한 문서를 정리합니다.
