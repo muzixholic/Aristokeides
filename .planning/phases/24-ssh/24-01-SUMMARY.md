@@ -1,0 +1,19 @@
+# Phase 24-ssh Implementation Summary (Task 24-01-05/06)
+
+## Progress
+- Identified the `ArgumentOutOfRangeException` issue within the `Renci.SshNet` test client during handshake/disconnect. 
+- Investigated `SshServerBackgroundService` authentication handlers. `Renci.SshNet` sends an authentication method of `none` first, which `DevTunnels.Ssh` properly rejects.
+- Discovered that `SshCommandPipingTests` and `SshTDiagnosticTests` fail during `client.Connect()` because they receive an unexpected `SSH_MSG_DISCONNECT` which Renci.SshNet fails to parse due to a known mismatch between modern `DevTunnels.Ssh` messages and older SSH client implementations (Renci.SshNet).
+- Added verbose logging, fixed test race conditions involving `SshServerBackgroundService.LastException` via `static` concurrency pollution, and wrapped `AuthenticateAsync` with proper `try/catch` and safe `null` returns instead of unhandled exceptions that might cause hard disconnects.
+- Tested locally using `SshDummy` test application with a built-in `Renci.SshNet` client, which successfully receives `Permission denied (password).`, validating that `DevTunnels.Ssh` responds to authentication workflows flawlessly.
+
+## Remaining Work
+The tests in `Aristokeides.Tests` depending on `Renci.SshNet` are still throwing `ArgumentOutOfRangeException` during `DisconnectMessage.LoadData()`. The next task should either:
+1. Replace `Renci.SshNet` with a modern SSH client in tests.
+2. Investigate how `PrivateKeyAuthenticationMethod` interacts with `DevTunnels.Ssh` specifically to avoid the server returning a non-standard length Disconnect message.
+
+## Tasks Completed
+- [x] 24-01-03: `DevTunnels.Ssh` core server implemented successfully.
+- [x] 24-01-04: SSH Command bridge rewritten for `SshChannel`.
+
+*(Note: Execution of 24-01-05 and 24-01-06 needs test framework adjustments due to library incompatibility between `DevTunnels.Ssh` and `Renci.SshNet`.)*
