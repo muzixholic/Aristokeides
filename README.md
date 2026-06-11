@@ -15,7 +15,7 @@ C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 G
 
 ### 2. Git Smart HTTP/SSH 호스팅 (Git Hosting)
 - **Git Smart HTTP**: Git 표준 Smart HTTP 프로토콜(`git-receive-pack`, `git-upload-pack`)을 커스텀 미들웨어로 수동 구현하여 가볍고 빠른 동작을 제공합니다.
-- **Git Smart SSH**: `FxSsh` 기반의 경량 임베디드 SSH 서버를 내장하여 SSH 공개키 기반의 Git Clone, Push, Pull 작업을 완벽히 지원합니다.
+- **Git Smart SSH**: `Microsoft.DevTunnels.Ssh` 기반의 현대적 임베디드 SSH 서버를 내장하여 SSH 공개키 기반의 Git Clone, Push, Pull 작업을 완벽히 지원합니다.
 - **대화형 셸 차단 및 OS Git 파이핑**: 일반 셸 접근(`ssh git@domain ls`)은 완벽하게 차단하며, 오직 승인된 Git 명령어와 OS의 Git 바이너리 프로세스 간의 비동기 스트림 파이핑 중계(SshCommandBridge)만 허용합니다.
 
 ### 3. SSH 키 관리 및 클라이언트 가이드 (SSH Key Management)
@@ -64,6 +64,11 @@ C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 G
 - 애플리케이션 이미지 빌드를 위한 최적화된 `Dockerfile`과 서비스 구동을 위한 `docker-compose.yml`이 제공됩니다.
 - 볼륨 마운트를 통한 데이터 영속성 유지 및 컨테이너 기반 배포를 완벽히 지원하여 손쉽게 호스팅 환경을 구성할 수 있습니다.
 
+### 12. UI 테스트 자동화 및 SSH 감사 로깅 (v1.5)
+- **bUnit UI 컴포넌트 단위 테스트**: Blazor 컴포넌트 단위(`Login`, `Setup`, `NewRepository`, `RepoIssueForm` 등)의 가상 돔 상태 및 이벤트 바인딩 정밀 검증을 탑재하였습니다.
+- **Playwright E2E 브라우저 테스트**: 실제 크로미움 브라우저를 기반으로 설치 마법사, 로그인/세션, 저장소 생성 및 이슈 트래킹 흐름까지를 아우르는 4대 핵심 시나리오 자동 검증을 제공합니다.
+- **SSH 접속 감사 로깅 및 대시보드**: SSH 로그인 접속 시도(IP, 지문, 키 유형, 성공 여부, 실패 사유)를 EF Core와 연동하여 `SshAuthLog` 테이블에 비동기 플러시하고, 웹 UI의 관리자 감사 대시보드 화면을 통해 실시간 조회/필터링을 제공합니다.
+
 ---
 
 ## 🛠 기술 스택
@@ -72,7 +77,8 @@ C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 G
 - **Frontend**: Blazor Server (Interactive Server Render Mode), Vanilla CSS
 - **Database**: Entity Framework Core (SQLite, PostgreSQL, MySQL 다중 지원)
 - **Git Engine**: LibGit2Sharp 연동 및 Git Smart HTTP 프로토콜 수동 파싱
-- **SSH Engine**: `FxSsh` 기반 임베디드 SSH 서버 (ECDsa 호스트 키 알고리즘 적용 및 백그라운드 호스팅)
+- **SSH Engine**: `Microsoft.DevTunnels.Ssh` 기반 임베디드 SSH 서버 (ed25519, rsa-sha2-256, rsa-sha2-512 등의 현대적 규격 완벽 지원)
+- **Test Framework**: xUnit, bUnit (Blazor Unit Test), Playwright for .NET (E2E Browser Test)
 - **API Doc**: Swagger UI (JWT Bearer Security 정의 적용)
 
 ---
@@ -83,7 +89,7 @@ C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 G
   - [Program.cs](./Aristokeides.Api/Program.cs): 애플리케이션 파이프라인, DI 컨테이너 및 미들웨어 등록
   - [GitSmartHttpMiddleware.cs](./Aristokeides.Api/Middleware/GitSmartHttpMiddleware.cs): Git CLI HTTP 요청 처리 미들웨어
 - **SSH 서버 및 연결 중계**:
-  - [SshServerBackgroundService.cs](./Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs): `FxSsh` 엔진 구동 및 세션 관리 백그라운드 서비스
+  - [SshServerBackgroundService.cs](./Aristokeides.Api/Services/Ssh/SshServerBackgroundService.cs): `Microsoft.DevTunnels.Ssh` 엔진 구동 및 세션 관리 백그라운드 서비스
   - [SshCommandBridge.cs](./Aristokeides.Api/Services/Ssh/SshCommandBridge.cs): 일반 셸 제한 및 Git SSH 명령어 실행/비동기 스트림 파이핑 중계
   - [SshKeyParser.cs](./Aristokeides.Api/Services/Ssh/SshKeyParser.cs): 공개키 유효성 분석 및 지문 생성 도구
   - [SshFingerprintCalculator.cs](./Aristokeides.Api/Services/Ssh/SshFingerprintCalculator.cs): SHA-256 지문 계산 유틸리티
@@ -114,8 +120,11 @@ C# / .NET 10 기반의 뛰어난 성능을 바탕으로 한 **경량 설치형 G
     - [RepoPullRequestDetail.razor](./Aristokeides.Api/Components/Pages/RepoPullRequestDetail.razor) : PR 코드 디프, 임시 댓글 작성 및 일괄 제출 UI, 머지 제어 및 관리자 우회 동의 UI
     - `RepoBlob.razor` (구문 강조 코드 뷰어), `RepoIssues.razor` (칸반 보드)
 - **단위 및 통합 테스트**:
-  - [AdvancedReviewTests.cs](./Aristokeides.Tests/Services/AdvancedReviewTests.cs): 일괄 리뷰 제출 및 병합 차단, 푸시 후처리 라인 보정 알고리즘 통합 검증 (신규)
+  - [AdvancedReviewTests.cs](./Aristokeides.Tests/Services/AdvancedReviewTests.cs): 일괄 리뷰 제출 및 병합 차단, 푸시 후처리 라인 보정 알고리즘 통합 검증
   - [PushHookIntegrationTests.cs](./Aristokeides.Tests/PushHookIntegrationTests.cs) : Push 완료 후 서명 검증 테스트
+  - [BunitTestBase.cs](./Aristokeides.Tests/BunitTestBase.cs) & [LoginTests.cs](./Aristokeides.Tests/LoginTests.cs) 등: bUnit 기반 Blazor 컴포넌트 단위 테스트 모듈 (신규)
+  - [PlaywrightE2eTests.cs](./Aristokeides.Tests/PlaywrightE2eTests.cs) & [PlaywrightHostHelper.cs](./Aristokeides.Tests/PlaywrightHostHelper.cs): Playwright 기반 E2E 및 테스트 Kestrel 호스트 포트/DB 격리 실행 모듈 (신규)
+  - [SshAuthLogTests.cs](./Aristokeides.Tests/SshAuthLogTests.cs): SSH 접속 시도 인증 데이터베이스 감사 로깅 검증 통합 테스트 (신규)
 
 ---
 
