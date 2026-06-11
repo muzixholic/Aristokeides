@@ -31,6 +31,8 @@ public class AppDbContext : DbContext
     public DbSet<LfsObject> LfsObjects => Set<LfsObject>();
     public DbSet<Webhook> Webhooks => Set<Webhook>();
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
+    public DbSet<SshAuthLog> SshAuthLogs => Set<SshAuthLog>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -330,6 +332,14 @@ public class AppDbContext : DbContext
                   .WithMany(w => w.Deliveries)
                   .HasForeignKey(wd => wd.WebhookId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SshAuthLog>(entity =>
+        {
+            entity.Property(l => l.ClientIp).HasMaxLength(45);
+            entity.Property(l => l.KeyFingerprint).HasMaxLength(256);
+            entity.Property(l => l.Username).HasMaxLength(256);
+            entity.Property(l => l.KeyType).HasMaxLength(50);
         });
     }
 }
