@@ -108,8 +108,19 @@ public class SshServerBackgroundService : BackgroundService
             session.Authenticating += (sender, e) => OnAuthenticating(sender, e, clientIp);
             session.ChannelOpening += OnChannelOpening;
 
+            var tcs = new TaskCompletionSource<bool>();
+            session.Closed += (s, e) => tcs.TrySetResult(true);
+
             await session.ConnectAsync(stream, cancellationToken);
-            await session.CloseAsync(SshDisconnectReason.ByApplication, "Server shutdown");
+            await tcs.Task;
+            if (!session.IsClosed)
+            {
+                await session.CloseAsync(SshDisconnectReason.ByApplication, "Server shutdown");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            DebugLogs.Add($"[Server] Canceled");
         }
         catch (Exception ex)
         {
@@ -132,15 +143,21 @@ public class SshServerBackgroundService : BackgroundService
         e.AuthenticationTask = AuthenticateAsync(e, clientIp);
     }
 
-    private async Task<ClaimsPrincipal> AuthenticateAsync(SshAuthenticatingEventArgs e, string clientIp)
+    private async Task<ClaimsPrincipal?> AuthenticateAsync(SshAuthenticatingEventArgs e, string clientIp)
     {
-        if (e.Username != "git")
+        try {
+            if (e.AuthenticationType.ToString().Equals("None", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (e.Username != "git")
         {
             LastAuthFailureReason = $"Username '{e.Username}' is not 'git'";
             LastAuthFailedUsername = e.Username ?? "";
             _logger.LogWarning("UserAuth failed: Username '{Username}' is not 'git'", e.Username);
             await LogAuthAttempt(clientIp, null, e.Username, false, LastAuthFailureReason, null);
-            throw new Exception("Authentication failed");
+            return null;
         }
 
         if (e.PublicKey == null)
@@ -148,7 +165,7 @@ public class SshServerBackgroundService : BackgroundService
             LastAuthFailureReason = "Public key is required for authentication.";
             _logger.LogWarning("UserAuth failed: No public key provided for user '{Username}'", e.Username);
             await LogAuthAttempt(clientIp, null, e.Username, false, LastAuthFailureReason, null);
-            throw new Exception("Authentication failed");
+            return null;
         }
 
         // Generate fingerprint
@@ -183,7 +200,12 @@ public class SshServerBackgroundService : BackgroundService
             LastAuthFailureReason = $"SSH Key not found in DB for fingerprint: {fingerprint}.";
             _logger.LogWarning("SSH Key not found in DB for fingerprint: {Fingerprint}", fingerprint);
             await LogAuthAttempt(clientIp, fingerprint, e.Username, false, LastAuthFailureReason, e.PublicKey.KeyAlgorithmName);
-            throw new Exception("Authentication failed");
+            return null;
+        }
+        } catch (Exception ex) {
+            DebugLogs.Add($"[Auth-Exception] {ex}");
+            LastAuthFailureReason = ex.Message;
+            return null;
         }
     }
 
