@@ -72,13 +72,37 @@
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
 
             <div style="background-color: #eff6ff; color: #1e3a8a; padding: 16px; border-radius: 6px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
-                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">💡 SSH 설정 팁</h3>
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">💡 SSH 설정 팁</h3>
                 <p style="font-size: 13px; margin: 0 0 8px 0; line-height: 1.5;">
-                    기본 SSH 키(예: <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_rsa</code> 또는 <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_ed25519</code>)가 아닌 커스텀 SSH 키를 사용하는 경우 SSH 클라이언트가 자동으로 해당 키를 제안하지 않을 수 있습니다. 이 경우 FxSsh에서 암호를 요청하거나 <strong>Permission denied</strong>로 연결이 실패할 수 있습니다.
+                    기본 SSH 키(예: <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_rsa</code> 또는 <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">id_ed25519</code>)가 아닌 커스텀 SSH 키를 사용하는 경우, SSH 클라이언트가 자동으로 해당 키를 제안하지 못해 패스워드 입력을 요구하거나 <strong>Permission denied</strong>로 연결이 실패할 수 있습니다.
                 </p>
-                <p style="font-size: 13px; margin: 0; line-height: 1.5;">
-                    이를 해결하려면 <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">-i</code> 플래그를 사용해 키 경로를 명시적으로 입력하거나(예: <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">ssh -i ~/.ssh/my_custom_key -T git@localhost -p 2222</code>), <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">~/.ssh/config</code> 파일에 해당 호스트 전용 <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">IdentityFile</code> 설정을 추가해 주십시오.
+                <p style="font-size: 13px; margin: 0 0 12px 0; line-height: 1.5;">
+                    이를 해결하려면 각 플랫폼별로 <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px;">config</code> 파일을 생성하거나 편집하고, <strong>IdentitiesOnly yes</strong> 옵션을 명시해 주시기 바랍니다.
                 </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px; margin-bottom: 12px;">
+                    <div>
+                        <strong>💻 Windows 설정 경로:</strong> <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px; font-family: monospace;">%USERPROFILE%\.ssh\config</code>
+                    </div>
+                    <div>
+                        <strong>🍎 macOS / 🐧 Linux 설정 경로:</strong> <code style="background: #dbeafe; padding: 2px 4px; border-radius: 3px; font-family: monospace;">~/.ssh/config</code>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <strong>⚙️ config 설정 템플릿 예시:</strong>
+                    <pre style="background: #ffffff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 10px; border-radius: 4px; margin: 6px 0 0 0; font-family: monospace; font-size: 12px; line-height: 1.4;">Host localhost
+  HostName localhost
+  Port 2222
+  User git
+  IdentityFile ~/.ssh/id_ed25519  # 실제 키 경로로 수정
+  IdentitiesOnly yes</pre>
+                </div>
+
+                <div>
+                    <strong>🔍 진단 연결 테스트 (키 명시):</strong>
+                    <pre style="background: #ffffff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 10px; border-radius: 4px; margin: 6px 0 0 0; font-family: monospace; font-size: 12px; line-height: 1.4;">ssh -i ~/.ssh/id_ed25519 -T git@localhost -p 2222 -o IdentitiesOnly=yes</pre>
+                </div>
             </div>
 
             <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">등록된 SSH 키 목록</h2>
