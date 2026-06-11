@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: UI 테스트 자동화 및 SSH 호환성 개선
 status: planning
-stopped_at: Phase 25 context gathered
-last_updated: "2026-06-11T06:36:54.084Z"
+stopped_at: Phase 25 planned
+last_updated: "2026-06-11T06:44:26.719Z"
 last_activity: 2026-06-11 -- Phase 24 execution completed
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
+  total_plans: 4
   completed_plans: 2
   percent: 25
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Last Session
 
-**Stopped at:** Phase 25 context gathered
-**Resume file:** .planning/phases/25-v1-5/25-CONTEXT.md
+**Stopped at:** Phase 25 planned
+**Resume file:** .planning/phases/25-v1-5/25-PLAN.md
 
 ## Decisions
 
