@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Aristokeides.Api.Data;
 using Aristokeides.Api.Services;
-using FxSsh.Services;
+using Aristokeides.Api.Services.Webhook;
+using Microsoft.DevTunnels.Ssh;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Aristokeides.Api.Services.Webhook;
-
 
 namespace Aristokeides.Api.Services.Ssh;
 
@@ -30,7 +30,7 @@ public class SshCommandBridge
         _signatureVerificationService = signatureVerificationService;
     }
 
-    public async Task RunGitCommandAsync(SessionChannel channel, string commandName, string repoPath, SshSessionState state)
+    public async Task RunGitCommandAsync(SshChannel channel, string commandName, string repoPath, SshSessionState state)
     {
         _logger.LogInformation("Running {Command} for repository {RepoPath} by user {Username}", commandName, repoPath, state.Username);
 
@@ -77,63 +77,46 @@ public class SshCommandBridge
             if (process == null)
             {
                 _logger.LogError("Failed to start git process.");
-                channel.SendClose(1);
+                await channel.CloseAsync(1, CancellationToken.None);
                 return;
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception while starting git process.");
-            channel.SendClose(1);
+            await channel.CloseAsync(1, CancellationToken.None);
             return;
         }
 
-        channel.DataReceived += (sender, args) =>
+        var channelStream = new SshStream(channel);
+        var cts = new CancellationTokenSource();
+
+        // Stdin 전송
+        var stdinTask = Task.Run(async () =>
         {
             try
             {
-                process.StandardInput.BaseStream.Write(args);
-                process.StandardInput.BaseStream.Flush();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to write to git process standard input.");
-            }
-        };
-        
-        channel.EofReceived += (sender, args) =>
-        {
-            try
-            {
-                process.StandardInput.Close();
+                await channelStream.CopyToAsync(process.StandardInput.BaseStream, cts.Token);
             }
             catch { }
-        };
-        
-        channel.CloseReceived += (sender, args) =>
-        {
-            try
+            finally
             {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                }
+                try { process.StandardInput.Close(); } catch { }
             }
-            catch { }
-        };
+        });
+
+        // Stdout/Stderr 전송
+        var stdoutTask = CopyStreamToChannelAsync(process.StandardOutput.BaseStream, channelStream, cts.Token);
+        var stderrTask = CopyStreamToChannelAsync(process.StandardError.BaseStream, channelStream, cts.Token);
 
         try
         {
-            var stdoutTask = CopyStreamToChannelAsync(process.StandardOutput.BaseStream, channel);
-            var stderrTask = CopyStreamToChannelExtendedAsync(process.StandardError.BaseStream, channel);
-
             await process.WaitForExitAsync();
+            cts.Cancel(); // Stop stdin copying if it hasn't stopped
             
-            try { process.StandardInput.Close(); } catch { }
-
             await Task.WhenAll(stdoutTask, stderrTask);
             
-            channel.SendClose((uint)process.ExitCode);
+            channel.CloseAsync((uint)process.ExitCode, CancellationToken.None).GetAwaiter().GetResult();
 
             // Push가 성공(ExitCode == 0)적으로 끝났을 때 신규 커밋들에 대해 서명 검증 수행
             if (isPush && process.ExitCode == 0 && Directory.Exists(physicalRepoPath))
@@ -265,7 +248,7 @@ public class SshCommandBridge
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while piping git process.");
-            channel.SendClose(1);
+            await channel.CloseAsync(1, CancellationToken.None);
         }
         finally
         {
@@ -273,29 +256,13 @@ public class SshCommandBridge
         }
     }
 
-    private async Task CopyStreamToChannelAsync(Stream source, SessionChannel channel)
+    private async Task CopyStreamToChannelAsync(Stream source, Stream destination, CancellationToken cancellationToken)
     {
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        try
         {
-            byte[] data = new byte[bytesRead];
-            Array.Copy(buffer, data, bytesRead);
-            channel.SendData(data);
+            await source.CopyToAsync(destination, cancellationToken);
         }
-    }
-
-    private async Task CopyStreamToChannelExtendedAsync(Stream source, SessionChannel channel)
-    {
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            byte[] data = new byte[bytesRead];
-            Array.Copy(buffer, data, bytesRead);
-            // Since FxSsh SessionChannel might not have SendExtendedData out of the box easily,
-            // we will fallback to standard SendData for stderr messages to client.
-            channel.SendData(data);
-        }
+        catch (OperationCanceledException) { }
+        catch (Exception) { }
     }
 }
