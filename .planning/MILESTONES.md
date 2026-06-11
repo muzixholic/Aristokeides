@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.5 UI 테스트 자동화 및 SSH 호환성 개선 (Shipped: 2026-06-11)
+
+**Phases completed:** 4 phases, 4 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v1.4 웹훅, LFS, 조직 및 보안 기능 강화 (Shipped: 2026-06-11)
 
 **Phases completed:** 12 phases, 31 plans, 22 tasks
